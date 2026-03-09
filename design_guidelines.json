@@ -1,0 +1,140 @@
+{
+  "identity": {
+    "name": "NextGen Learning",
+    "persona": "The Digital Campus - A futuristic yet grounded educational hub.",
+    "archetype": "Growth & Trust (Archetype 1) fused with Electric Future (Archetype 7)",
+    "emotional_tone": "Empowering, Academic, Clarity, Progress"
+  },
+  "typography": {
+    "font_family": {
+      "heading": "Outfit, sans-serif",
+      "body": "Inter, sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "scale": {
+      "base": "16px",
+      "h1": "text-4xl md:text-6xl font-bold tracking-tight",
+      "h2": "text-3xl md:text-5xl font-semibold tracking-tight",
+      "h3": "text-2xl md:text-3xl font-medium",
+      "body_lg": "text-lg leading-relaxed",
+      "body_base": "text-base leading-7",
+      "caption": "text-sm text-muted-foreground uppercase tracking-widest"
+    },
+    "rules": [
+      "Headings must use Outfit. Do not use Inter for headings.",
+      "Body text must have a line-height of at least 1.6 for readability.",
+      "Use 'tracking-tight' for all headings larger than 24px.",
+      "Use 'tracking-widest' for small overline labels (e.g., 'CLASS 10', 'SCIENCE')."
+    ]
+  },
+  "colors": {
+    "theme": "light",
+    "palette": {
+      "primary": {
+        "DEFAULT": "#2563EB",
+        "foreground": "#FFFFFF",
+        "description": "Royal Blue - Primary Actions, Buttons, Links"
+      },
+      "secondary": {
+        "DEFAULT": "#7C3AED",
+        "foreground": "#FFFFFF",
+        "description": "Deep Violet - Brand Identity, AI Features, Premium Content"
+      },
+      "accent_science": {
+        "DEFAULT": "#0EA5E9",
+        "foreground": "#FFFFFF",
+        "description": "Sky Blue - For Science Stream/PCM/PCB"
+      },
+      "accent_commerce": {
+        "DEFAULT": "#F59E0B",
+        "foreground": "#FFFFFF",
+        "description": "Amber - For Commerce Stream"
+      },
+      "accent_arts": {
+        "DEFAULT": "#E11D48",
+        "foreground": "#FFFFFF",
+        "description": "Rose - For Humanities/Arts"
+      },
+      "background": {
+        "DEFAULT": "#F8FAFC",
+        "paper": "#FFFFFF",
+        "dark": "#0F172A"
+      },
+      "text": {
+        "primary": "#0F172A",
+        "secondary": "#475569",
+        "muted": "#94A3B8"
+      }
+    },
+    "gradients": {
+      "brand": "bg-gradient-to-r from-blue-600 to-violet-600",
+      "science": "bg-gradient-to-br from-sky-400 to-blue-600",
+      "commerce": "bg-gradient-to-br from-amber-400 to-orange-600",
+      "arts": "bg-gradient-to-br from-rose-400 to-pink-600",
+      "glass": "bg-white/80 backdrop-blur-md border border-white/20 shadow-sm"
+    }
+  },
+  "layout_strategies": {
+    "spacing": "Generous. Use p-6, p-8, or p-12 for containers. Avoid cramped lists.",
+    "container_width": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+    "bento_grid": {
+      "wrapper": "grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[minmax(180px,auto)]",
+      "hero_card": "md:col-span-2 md:row-span-2",
+      "tall_card": "md:row-span-2",
+      "standard_card": "col-span-1"
+    },
+    "dashboard_layout": {
+      "sidebar": "w-64 fixed h-full bg-white border-r border-slate-200 hidden md:block z-30",
+      "main_content": "md:pl-64 min-h-screen bg-slate-50",
+      "header": "sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-200 h-16 flex items-center px-6"
+    }
+  },
+  "components": {
+    "buttons": {
+      "base": "inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+      "primary": "bg-primary text-primary-foreground hover:bg-blue-700 shadow-lg shadow-blue-500/25",
+      "secondary": "bg-secondary text-secondary-foreground hover:bg-violet-700 shadow-lg shadow-violet-500/25",
+      "outline": "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+      "ghost": "hover:bg-slate-100 hover:text-slate-900"
+    },
+    "cards": {
+      "style": "bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200",
+      "interactive": "cursor-pointer hover:-translate-y-1 transition-transform duration-200"
+    },
+    "visual_enhancers": {
+      "glass_panel": "bg-white/70 backdrop-blur-xl border border-white/40 shadow-xl",
+      "glow_effect": "absolute -inset-1 bg-gradient-to-r from-blue-600 to-violet-600 rounded-lg blur opacity-25 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"
+    }
+  },
+  "assets": {
+    "icons": {
+      "library": "lucide-react",
+      "style": "Stroke width 1.5px for a clean, academic look. Use 2px for active states."
+    },
+    "images": {
+      "instructions": "Since the image tool failed during discovery, you MUST try to fetch images again using the `image_selector_tool` when building. If it fails, use high-quality gradients matching the stream colors.",
+      "categories": {
+        "hero_bg": "Indian students studying online, modern home environment",
+        "science_stream": "Abstract science, DNA, atoms, blue tones",
+        "commerce_stream": "Finance, charts, calculator, amber tones",
+        "arts_stream": "Books, history, globe, rose tones",
+        "teacher_avatars": "Professional diverse headshots"
+      }
+    }
+  },
+  "accessibility": {
+    "contrast": "Ensure text-to-background ratio is at least 4.5:1. Use Slate-600 or darker for body text on white.",
+    "focus_states": "Visible focus rings (ring-2 ring-primary ring-offset-2) on all interactive elements.",
+    "motion": "Respect prefers-reduced-motion. Wrap complex animations in motion-safe checks."
+  },
+  "universal_guidelines": [
+    "Do NOT use 'Inter' for Headings. Use 'Outfit'.",
+    "Avoid generic 'text-center' layouts. Use asymmetric grids.",
+    "Use generous padding (p-8+) inside cards.",
+    "Dark Mode is critical for the 'Video Player' page to reduce eye strain, even if the rest of the app is Light Mode.",
+    "All interactive elements MUST have a `data-testid` attribute.",
+    "Don't use gradients for text. It impairs readability.",
+    "Use 'sonner' for toast notifications.",
+    "Use 'lucide-react' for icons."
+  ]
+}
