@@ -329,6 +329,7 @@ const Landing = () => {
           </div>
           <div className="border-t border-slate-800 pt-8 text-center text-sm">
             <p>© 2026 NextGen Learning. All rights reserved.</p>
+            <p className="text-slate-500 mt-2">www.nextgenlearning.com</p>
           </div>
         </div>
       </footer>
