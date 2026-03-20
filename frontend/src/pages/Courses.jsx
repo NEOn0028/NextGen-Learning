@@ -6,7 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import axios from 'axios';
-import { Search, ArrowLeft } from 'lucide-react';
+import { Search, ArrowLeft, User, LogOut } from 'lucide-react';
+import { isAuthenticated, getUser, clearAuth } from '@/utils/auth';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -16,6 +17,7 @@ const Courses = () => {
   const [courses, setCourses] = useState([]);
   const [filteredCourses, setFilteredCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
   const [filters, setFilters] = useState({
     class_level: '',
     stream: '',
@@ -23,6 +25,10 @@ const Courses = () => {
   });
   
   useEffect(() => {
+    // Check if user is logged in
+    if (isAuthenticated()) {
+      setUser(getUser());
+    }
     loadCourses();
   }, []);
   
@@ -68,6 +74,21 @@ const Courses = () => {
     return 'gradient-brand';
   };
   
+  const handleLogout = () => {
+    clearAuth();
+    setUser(null);
+    toast.success('Logged out successfully');
+    navigate('/');
+  };
+  
+  const handleEnroll = (courseId) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    navigate(`/checkout/${courseId}`);
+  };
+  
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Navbar */}
@@ -86,12 +107,28 @@ const Courses = () => {
               <span className="text-2xl font-bold heading-font">NextGen Learning</span>
             </Link>
             <div className="flex items-center gap-4">
-              <Link to="/login">
-                <Button variant="ghost" className="text-slate-700" data-testid="nav-login-btn">Login</Button>
-              </Link>
-              <Link to="/signup">
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="nav-signup-btn">Get Started</Button>
-              </Link>
+              {user ? (
+                <>
+                  <Link to={`/${user.role}/dashboard`}>
+                    <Button variant="ghost" className="text-slate-700 flex items-center gap-2" data-testid="nav-dashboard-btn">
+                      <User className="w-4 h-4" />
+                      Dashboard
+                    </Button>
+                  </Link>
+                  <Button variant="ghost" onClick={handleLogout} className="text-slate-700" data-testid="nav-logout-btn">
+                    <LogOut className="w-4 h-4" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link to="/login">
+                    <Button variant="ghost" className="text-slate-700" data-testid="nav-login-btn">Login</Button>
+                  </Link>
+                  <Link to="/signup">
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="nav-signup-btn">Get Started</Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -180,8 +217,15 @@ const Courses = () => {
                       <p className="text-2xl font-bold text-blue-600">₹{course.price}<span className="text-sm text-slate-500">/mo</span></p>
                     </div>
                   </div>
+                  <Button 
+                    onClick={() => handleEnroll(course.course_id)}
+                    className="w-full bg-blue-600 hover:bg-blue-700 mb-2" 
+                    data-testid={`enroll-course-btn-${course.course_id}`}
+                  >
+                    {user ? 'Enroll Now' : 'Login to Enroll'}
+                  </Button>
                   <Link to={`/courses/${course.course_id}`}>
-                    <Button className="w-full bg-blue-600 hover:bg-blue-700" data-testid={`view-course-btn-${course.course_id}`}>
+                    <Button variant="outline" className="w-full" data-testid={`view-course-btn-${course.course_id}`}>
                       View Details
                     </Button>
                   </Link>

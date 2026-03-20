@@ -5,7 +5,8 @@ import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import axios from 'axios';
-import { ArrowLeft, BookOpen, Video, Calendar, Users } from 'lucide-react';
+import { ArrowLeft, BookOpen, Video, Calendar, Users, User, LogOut } from 'lucide-react';
+import { isAuthenticated, getUser, clearAuth } from '@/utils/auth';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -16,11 +17,12 @@ const CourseDetail = () => {
   const [course, setCourse] = useState(null);
   const [lectures, setLectures] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
   
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    setIsAuthenticated(!!token);
+    if (isAuthenticated()) {
+      setUser(getUser());
+    }
     loadCourseData();
   }, [courseId]);
   
@@ -39,11 +41,18 @@ const CourseDetail = () => {
   };
   
   const handleEnroll = () => {
-    if (!isAuthenticated) {
+    if (!user) {
       navigate('/login');
       return;
     }
     navigate(`/checkout/${courseId}`);
+  };
+  
+  const handleLogout = () => {
+    clearAuth();
+    setUser(null);
+    toast.success('Logged out successfully');
+    navigate('/courses');
   };
   
   if (loading) {
@@ -76,6 +85,30 @@ const CourseDetail = () => {
               </button>
               <span className="text-2xl font-bold heading-font">Back to Courses</span>
             </Link>
+            <div className="flex items-center gap-4">
+              {user ? (
+                <>
+                  <Link to={`/${user.role}/dashboard`}>
+                    <Button variant="ghost" className="text-slate-700 flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      Dashboard
+                    </Button>
+                  </Link>
+                  <Button variant="ghost" onClick={handleLogout} className="text-slate-700">
+                    <LogOut className="w-4 h-4" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link to="/login">
+                    <Button variant="ghost" className="text-slate-700">Login</Button>
+                  </Link>
+                  <Link to="/signup">
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-white">Get Started</Button>
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </nav>
