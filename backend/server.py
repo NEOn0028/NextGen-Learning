@@ -556,6 +556,32 @@ async def get_teacher_courses(teacher_id: str):
             course['created_at'] = datetime.fromisoformat(course['created_at'])
     return courses
 
+@api_router.delete("/courses/{course_id}")
+async def delete_course(
+    course_id: str,
+    current_user: User = Depends(require_role([UserRole.TEACHER, UserRole.ADMIN]))
+):
+    # Check if course exists and belongs to the teacher (or admin)
+    course = await db.courses.find_one({"course_id": course_id})
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    # Only allow the course owner (teacher) or admin to delete
+    if current_user.role != UserRole.ADMIN and course.get('teacher_id') != current_user.user_id:
+        raise HTTPException(status_code=403, detail="You can only delete your own courses")
+    
+    # Delete associated data
+    await db.lectures.delete_many({"course_id": course_id})
+    await db.assignments.delete_many({"course_id": course_id})
+    await db.live_classes.delete_many({"course_id": course_id})
+    await db.tests.delete_many({"course_id": course_id})
+    await db.enrollments.delete_many({"course_id": course_id})
+    
+    # Delete the course
+    await db.courses.delete_one({"course_id": course_id})
+    
+    return {"message": "Course and all associated data deleted successfully"}
+
 # ============ ENROLLMENT ENDPOINTS ============
 
 @api_router.post("/enrollments", response_model=Enrollment)
