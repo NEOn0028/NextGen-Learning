@@ -168,9 +168,11 @@ const TeacherDashboard = () => {
                     <div className="p-6">
                       <h3 className="text-xl font-semibold heading-font mb-2">{course.title}</h3>
                       <p className="text-sm text-slate-600 mb-4">{course.subject} • Class {course.class_level}</p>
-                      <Button className="w-full bg-blue-600 hover:bg-blue-700" data-testid={`manage-course-btn-${course.course_id}`}>
-                        Manage Course
-                      </Button>
+                      <Link to={`/teacher/course/${course.course_id}`}>
+                        <Button className="w-full bg-blue-600 hover:bg-blue-700" data-testid={`manage-course-btn-${course.course_id}`}>
+                          Manage Course
+                        </Button>
+                      </Link>
                     </div>
                   </Card>
                 ))}

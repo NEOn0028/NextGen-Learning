@@ -1078,6 +1078,77 @@ async def verify_payment(
 
 # ============ ADMIN ENDPOINTS ============
 
+@api_router.get("/admin/payment-verifications")
+async def get_payment_verifications(current_user: User = Depends(require_role([UserRole.ADMIN]))):
+    """Get all payment verifications for admin review"""
+    verifications = await db.payment_verifications.find({}, {"_id": 0}).sort("submitted_at", -1).to_list(1000)
+    
+    # Parse datetime strings
+    for verification in verifications:
+        if isinstance(verification.get('submitted_at'), str):
+            verification['submitted_at'] = verification['submitted_at']
+        if verification.get('verified_at') and isinstance(verification['verified_at'], str):
+            verification['verified_at'] = verification['verified_at']
+    
+    return verifications
+
+@api_router.post("/admin/approve-payment/{verification_id}")
+async def approve_payment(
+    verification_id: str,
+    current_user: User = Depends(require_role([UserRole.ADMIN]))
+):
+    """Approve payment and grant course access"""
+    # Get verification details
+    verification = await db.payment_verifications.find_one({"verification_id": verification_id})
+    if not verification:
+        raise HTTPException(status_code=404, detail="Verification not found")
+    
+    # Update verification status
+    await db.payment_verifications.update_one(
+        {"verification_id": verification_id},
+        {"$set": {
+            "status": "verified",
+            "verified_at": datetime.now(timezone.utc).isoformat(),
+            "verified_by": current_user.user_id
+        }}
+    )
+    
+    # Update enrollment status to completed
+    await db.enrollments.update_one(
+        {"student_id": verification['student_id'], "course_id": verification['course_id']},
+        {"$set": {"payment_status": "completed"}}
+    )
+    
+    return {"message": "Payment approved and course access granted"}
+
+@api_router.post("/admin/reject-payment/{verification_id}")
+async def reject_payment(
+    verification_id: str,
+    current_user: User = Depends(require_role([UserRole.ADMIN]))
+):
+    """Reject payment verification"""
+    verification = await db.payment_verifications.find_one({"verification_id": verification_id})
+    if not verification:
+        raise HTTPException(status_code=404, detail="Verification not found")
+    
+    # Update verification status
+    await db.payment_verifications.update_one(
+        {"verification_id": verification_id},
+        {"$set": {
+            "status": "rejected",
+            "verified_at": datetime.now(timezone.utc).isoformat(),
+            "verified_by": current_user.user_id
+        }}
+    )
+    
+    # Update enrollment status to failed
+    await db.enrollments.update_one(
+        {"student_id": verification['student_id'], "course_id": verification['course_id']},
+        {"$set": {"payment_status": "failed"}}
+    )
+    
+    return {"message": "Payment rejected"}
+
 @api_router.get("/admin/users")
 async def get_all_users(current_user: User = Depends(require_role([UserRole.ADMIN]))):
     users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)

@@ -16,6 +16,7 @@ import CourseDetail from '@/pages/CourseDetail';
 import Checkout from '@/pages/Checkout';
 import VideoPlayer from '@/pages/VideoPlayer';
 import Doubts from '@/pages/Doubts';
+import ManageCourse from '@/pages/ManageCourse';
 
 function AppRouter() {
   const location = useLocation();
@@ -38,6 +39,7 @@ function AppRouter() {
       {/* Protected Routes */}
       <Route path="/student/dashboard" element={<StudentDashboard />} />
       <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+      <Route path="/teacher/course/:courseId" element={<ManageCourse />} />
       <Route path="/parent/dashboard" element={<ParentDashboard />} />
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
       <Route path="/lectures/:lectureId" element={<VideoPlayer />} />
