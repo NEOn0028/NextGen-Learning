@@ -24,19 +24,19 @@ const Landing = () => {
       class: 'Class 9-12 (General)', 
       description: '1-on-1 Personal Mentorship',
       highlight: 'Dedicated teacher • Weekly tests • Doubt support',
-      price: '₹7,000'
+      price: '₹6,999'
     },
     { 
       class: 'Class 11-12 Humanities', 
       description: '1-on-1 Personal Mentorship',
       highlight: 'Dedicated teacher • Weekly tests • Doubt support',
-      price: '₹8,000'
+      price: '₹7,999'
     },
     { 
       class: 'Class 11-12 Commerce', 
       description: '1-on-1 Personal Mentorship',
       highlight: 'Dedicated teacher • Weekly tests • Doubt support',
-      price: '₹10,000'
+      price: '₹9,999'
     }
   ];
   
