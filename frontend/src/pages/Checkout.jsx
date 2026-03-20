@@ -21,7 +21,7 @@ const Checkout = () => {
   const [upiId, setUpiId] = useState('');
   const [transactionId, setTransactionId] = useState('');
   
-  const COMPANY_UPI_ID = 'nextgenlearning@paytm'; // Replace with actual UPI ID
+  const COMPANY_UPI_ID = 'ruchikejriwal28@okhdfcbank';
   
   useEffect(() => {
     checkAuthAndLoadData();
