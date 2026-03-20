@@ -8,7 +8,6 @@ const Landing = () => {
   const navigate = useNavigate();
   
   const streams = [
-    { name: 'Science (PCM/PCB)', color: 'from-sky-400 to-blue-600', icon: '🔬', subjects: 'Physics, Chemistry, Maths, Biology' },
     { name: 'Commerce', color: 'from-amber-400 to-orange-600', icon: '💼', subjects: 'Accounts, Economics, Business Studies' },
     { name: 'Humanities', color: 'from-rose-400 to-pink-600', icon: '📚', subjects: 'History, Political Science, Geography' }
   ];
@@ -21,9 +20,24 @@ const Landing = () => {
   ];
   
   const pricing = [
-    { class: 'Class 9-10', packages: [{ name: 'Single Subject', price: '₹999' }, { name: '3 Subjects', price: '₹2,499' }, { name: 'All Subjects', price: '₹3,999' }] },
-    { class: 'Class 11-12 Science', packages: [{ name: 'Single Subject', price: '₹1,499' }, { name: 'PCM/PCB', price: '₹3,999' }, { name: 'Full Course', price: '₹4,999' }] },
-    { class: 'Class 11-12 Commerce', packages: [{ name: 'Single Subject', price: '₹1,299' }, { name: 'Full Package', price: '₹3,499' }] }
+    { 
+      class: 'Class 9-12 (General)', 
+      description: '1-on-1 Personal Mentorship',
+      highlight: 'Dedicated teacher • Weekly tests • Doubt support',
+      price: '₹7,000'
+    },
+    { 
+      class: 'Class 11-12 Humanities', 
+      description: '1-on-1 Personal Mentorship',
+      highlight: 'Dedicated teacher • Weekly tests • Doubt support',
+      price: '₹8,000'
+    },
+    { 
+      class: 'Class 11-12 Commerce', 
+      description: '1-on-1 Personal Mentorship',
+      highlight: 'Dedicated teacher • Weekly tests • Doubt support',
+      price: '₹10,000'
+    }
   ];
   
   return (
@@ -66,10 +80,10 @@ const Landing = () => {
                 <span>AI-Powered Learning Platform</span>
               </div>
               <h1 className="text-4xl md:text-6xl font-bold heading-font tracking-tight mb-6" data-testid="hero-heading">
-                Master Your <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">Board Exams</span> with Expert Guidance
+                Master Your <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">Board Exams</span> with Premium 1-on-1 Mentorship
               </h1>
               <p className="text-lg text-slate-600 mb-8 leading-relaxed" data-testid="hero-description">
-                Join thousands of students from Classes 9-12 learning from India's best teachers. Live classes, recorded lectures, and AI-powered doubt solving.
+                Join hundreds of students from Classes 9-12 learning from India's best teachers through personalized one-on-one sessions. Live classes, recorded lectures, and AI-powered doubt solving.
               </p>
               <div className="flex flex-wrap gap-4">
                 <Link to="/signup" data-testid="hero-cta-btn">
@@ -104,7 +118,7 @@ const Landing = () => {
             <h2 className="text-3xl md:text-5xl font-semibold heading-font tracking-tight mb-4" data-testid="streams-heading">Choose Your Stream</h2>
             <p className="text-lg text-slate-600">Specialized courses for every board and stream</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 gap-6">
             {streams.map((stream, idx) => (
               <Card key={idx} className="p-8 hover-lift cursor-pointer border-slate-200" data-testid={`stream-card-${idx}`}>
                 <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${stream.color} flex items-center justify-center text-3xl mb-4`}>
@@ -151,18 +165,59 @@ const Landing = () => {
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {pricing.map((tier, idx) => (
-              <Card key={idx} className="p-8 hover-lift border-2 border-slate-200" data-testid={`pricing-card-${idx}`}>
-                <h3 className="text-2xl font-semibold heading-font mb-6">{tier.class}</h3>
-                <div className="space-y-4 mb-8">
-                  {tier.packages.map((pkg, pidx) => (
-                    <div key={pidx} className="flex justify-between items-center py-3 border-b border-slate-100">
-                      <span className="text-slate-700">{pkg.name}</span>
-                      <span className="text-xl font-bold text-blue-600">{pkg.price}<span className="text-sm text-slate-500">/mo</span></span>
-                    </div>
-                  ))}
+              <Card key={idx} className="p-8 hover-lift border-2 border-slate-200 relative overflow-hidden" data-testid={`pricing-card-${idx}`}>
+                {idx === 2 && (
+                  <div className="absolute top-0 right-0 bg-gradient-to-r from-blue-600 to-violet-600 text-white text-xs font-bold px-4 py-1 rounded-bl-lg">
+                    PREMIUM
+                  </div>
+                )}
+                <div className="mb-6">
+                  <h3 className="text-2xl font-semibold heading-font mb-2">{tier.class}</h3>
+                  <p className="text-lg text-blue-600 font-medium mb-1">{tier.description}</p>
+                  <p className="text-sm text-slate-600">{tier.highlight}</p>
+                </div>
+                <div className="mb-8">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-bold text-slate-900">{tier.price}</span>
+                    <span className="text-slate-500">/month</span>
+                  </div>
+                </div>
+                <div className="space-y-3 mb-8">
+                  <div className="flex items-center gap-2 text-sm text-slate-700">
+                    <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>One-on-one live classes</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-slate-700">
+                    <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Personalized study plan</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-slate-700">
+                    <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Recorded lectures access</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-slate-700">
+                    <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>AI-powered doubt assistant</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-slate-700">
+                    <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Progress tracking & reports</span>
+                  </div>
                 </div>
                 <Link to="/signup">
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" data-testid={`pricing-enroll-btn-${idx}`}>Enroll Now</Button>
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12" data-testid={`pricing-enroll-btn-${idx}`}>
+                    Enroll Now
+                  </Button>
                 </Link>
               </Card>
             ))}
@@ -173,8 +228,8 @@ const Landing = () => {
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-r from-blue-600 to-violet-600 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-5xl font-bold heading-font mb-6" data-testid="cta-heading">Ready to Start Your Learning Journey?</h2>
-          <p className="text-xl mb-8 text-blue-100">Join thousands of students achieving their academic goals</p>
+          <h2 className="text-3xl md:text-5xl font-bold heading-font mb-6" data-testid="cta-heading">Ready for Premium 1-on-1 Learning?</h2>
+          <p className="text-xl mb-8 text-blue-100">Join hundreds of students achieving academic excellence with personalized mentorship</p>
           <Link to="/signup" data-testid="cta-signup-btn">
             <Button size="lg" className="bg-white text-blue-600 hover:bg-slate-100 shadow-2xl px-8">
               Get Started Free <ArrowRight className="ml-2 w-5 h-5" />
@@ -194,9 +249,9 @@ const Landing = () => {
             <div>
               <h4 className="font-semibold text-white mb-4">Courses</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">Class 9-10</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Class 11-12 Science</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Class 9-12 General</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Class 11-12 Commerce</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Class 11-12 Humanities</a></li>
               </ul>
             </div>
             <div>

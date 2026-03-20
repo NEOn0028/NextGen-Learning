@@ -220,7 +220,7 @@ const StudentDashboard = () => {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {courses.map((course) => (
                   <Card key={course.course_id} className="hover-lift overflow-hidden" data-testid={`course-card-${course.course_id}`}>
-                    <div className={`h-32 gradient-${course.stream === 'science' ? 'science' : course.stream === 'commerce' ? 'commerce' : 'arts'}`}></div>
+                    <div className={`h-32 ${course.stream === 'commerce' ? 'gradient-commerce' : course.stream === 'arts' || course.stream === 'humanities' ? 'gradient-arts' : 'gradient-brand'}`}></div>
                     <div className="p-6">
                       <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
                         Class {course.class_level} • {course.stream}

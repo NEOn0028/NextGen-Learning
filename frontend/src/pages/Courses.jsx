@@ -63,9 +63,8 @@ const Courses = () => {
   };
   
   const getStreamColor = (stream) => {
-    if (stream === 'science') return 'gradient-science';
     if (stream === 'commerce') return 'gradient-commerce';
-    if (stream === 'arts') return 'gradient-arts';
+    if (stream === 'arts' || stream === 'humanities') return 'gradient-arts';
     return 'gradient-brand';
   };
   
@@ -138,9 +137,8 @@ const Courses = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Streams</SelectItem>
-                <SelectItem value="science">Science</SelectItem>
                 <SelectItem value="commerce">Commerce</SelectItem>
-                <SelectItem value="arts">Arts</SelectItem>
+                <SelectItem value="arts">Arts/Humanities</SelectItem>
                 <SelectItem value="general">General</SelectItem>
               </SelectContent>
             </Select>
