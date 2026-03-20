@@ -1,11 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BookOpen, Users, Award, TrendingUp, CheckCircle, ArrowRight, Sparkles, Video, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { isAuthenticated, getUser } from '@/utils/auth';
 
 const Landing = () => {
   const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  
+  useEffect(() => {
+    if (isAuthenticated()) {
+      setUser(getUser());
+    }
+  }, []);
   
   const streams = [
     { name: 'Commerce', color: 'from-amber-400 to-orange-600', icon: '💼', subjects: 'Accounts, Economics, Business Studies' },
@@ -59,12 +67,22 @@ const Landing = () => {
               <a href="#pricing" className="text-slate-700 hover:text-blue-600 font-medium transition-colors" data-testid="nav-pricing-link">Pricing</a>
               <a href="#features" className="text-slate-700 hover:text-blue-600 font-medium transition-colors" data-testid="nav-features-link">Features</a>
               <a href="#contact" className="text-slate-700 hover:text-blue-600 font-medium transition-colors" data-testid="nav-contact-link">Contact</a>
-              <Link to="/login" data-testid="nav-login-btn">
-                <Button variant="ghost" className="text-slate-700">Login</Button>
-              </Link>
-              <Link to="/signup" data-testid="nav-signup-btn">
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25">Get Started</Button>
-              </Link>
+              {user ? (
+                <Link to={`/${user.role}/dashboard`} data-testid="nav-dashboard-btn">
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25">
+                    Go to Dashboard
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Link to="/login" data-testid="nav-login-btn">
+                    <Button variant="ghost" className="text-slate-700">Login</Button>
+                  </Link>
+                  <Link to="/signup" data-testid="nav-signup-btn">
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25">Get Started</Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
