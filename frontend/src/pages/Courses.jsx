@@ -84,6 +84,7 @@ const Courses = () => {
                 alt="NextGen Learning" 
                 className="h-10"
               />
+              <span className="text-2xl font-bold heading-font">NextGen Learning</span>
             </Link>
             <div className="flex items-center gap-4">
               <Link to="/login">

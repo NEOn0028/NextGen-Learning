@@ -98,11 +98,14 @@ const StudentDashboard = () => {
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
         <div className="flex items-center justify-between p-6 border-b border-slate-200">
-          <img 
-            src="https://customer-assets.emergentagent.com/job_board-ready-3/artifacts/9esikr1w_ChatGPT%20Image%20Mar%209%2C%202026%2C%2001_45_09%20PM.png" 
-            alt="NextGen Learning" 
-            className="h-10"
-          />
+          <div className="flex items-center gap-2">
+            <img 
+              src="https://customer-assets.emergentagent.com/job_board-ready-3/artifacts/9esikr1w_ChatGPT%20Image%20Mar%209%2C%202026%2C%2001_45_09%20PM.png" 
+              alt="NextGen Learning" 
+              className="h-8"
+            />
+            <span className="font-bold heading-font text-xl">NextGen Learning</span>
+          </div>
           <button onClick={() => setSidebarOpen(false)} className="md:hidden">
             <X className="w-6 h-6" />
           </button>

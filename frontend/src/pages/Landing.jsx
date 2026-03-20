@@ -38,6 +38,7 @@ const Landing = () => {
                 alt="NextGen Learning" 
                 className="h-10"
               />
+              <span className="text-2xl font-bold heading-font bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">NextGen Learning</span>
             </div>
             <div className="hidden md:flex items-center gap-6">
               <a href="#courses" className="text-slate-700 hover:text-blue-600 font-medium transition-colors" data-testid="nav-courses-link">Courses</a>
