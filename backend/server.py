@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Header, Response, Request
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Header, Response, Request, Form, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -965,6 +965,50 @@ async def get_announcements():
     return announcements
 
 # ============ PAYMENT ENDPOINTS (MOCKED) ============
+
+@api_router.post("/payments/submit-verification")
+async def submit_payment_verification(
+    course_id: str = Form(...),
+    amount: int = Form(...),
+    upi_id: str = Form(...),
+    utr: str = Form(...),
+    screenshot: Optional[bytes] = File(None),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Submit payment verification details for manual verification
+    """
+    verification_id = f"verification_{uuid.uuid4().hex[:12]}"
+    
+    verification_doc = {
+        "verification_id": verification_id,
+        "student_id": current_user.user_id,
+        "student_name": current_user.name,
+        "student_email": current_user.email,
+        "course_id": course_id,
+        "amount": amount,
+        "upi_id": upi_id,
+        "utr": utr,
+        "has_screenshot": screenshot is not None,
+        "status": "pending",  # pending, verified, rejected
+        "submitted_at": datetime.now(timezone.utc).isoformat(),
+        "verified_at": None,
+        "verified_by": None
+    }
+    
+    await db.payment_verifications.insert_one(verification_doc)
+    
+    # Update enrollment status to pending
+    await db.enrollments.update_one(
+        {"student_id": current_user.user_id, "course_id": course_id},
+        {"$set": {"payment_status": "pending_verification"}}
+    )
+    
+    return {
+        "message": "Payment verification submitted successfully",
+        "verification_id": verification_id,
+        "status": "pending"
+    }
 
 @api_router.post("/payments/create-order")
 async def create_payment_order(
