@@ -1,34 +1,129 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* NextGen Learning - Global Styles */
+
+:root {
+  --primary: #2563EB;
+  --primary-hover: #1D4ED8;
+  --secondary: #7C3AED;
+  --secondary-hover: #6D28D9;
+  --accent-science: #0EA5E9;
+  --accent-commerce: #F59E0B;
+  --accent-arts: #E11D48;
+  --bg-default: #F8FAFC;
+  --bg-paper: #FFFFFF;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
+  --border-color: #E2E8F0;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+* {
+  box-sizing: border-box;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+body {
+  background-color: var(--bg-default);
+  color: var(--text-primary);
+  line-height: 1.6;
 }
 
-.App-link {
-    color: #61dafb;
+.heading-font {
+  font-family: 'Outfit', sans-serif;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+.body-font {
+  font-family: 'Inter', sans-serif;
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.25);
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+  box-shadow: 0 6px 20px 0 rgba(37, 99, 235, 0.35);
+}
+
+.btn-secondary {
+  background: var(--secondary);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px 0 rgba(124, 58, 237, 0.25);
+}
+
+.btn-secondary:hover {
+  background: var(--secondary-hover);
+  box-shadow: 0 6px 20px 0 rgba(124, 58, 237, 0.35);
+}
+
+.gradient-brand {
+  background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%);
+}
+
+.gradient-science {
+  background: linear-gradient(135deg, #0EA5E9 0%, #2563EB 100%);
+}
+
+.gradient-commerce {
+  background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%);
+}
+
+.gradient-arts {
+  background: linear-gradient(135deg, #E11D48 0%, #EC4899 100%);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Focus states */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Remove default margins that affect layout */
+p, h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+}
+
+/* Loading animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }

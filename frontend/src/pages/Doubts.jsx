@@ -1,0 +1,279 @@
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
+import axios from 'axios';
+import { Sparkles, MessageCircle, Send, Loader2, ArrowLeft, Menu, X, BookOpen, LogOut } from 'lucide-react';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
+
+const Doubts = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [doubts, setDoubts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    subject: '',
+    message: '',
+    use_ai: true
+  });
+  
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          navigate('/login');
+          return;
+        }
+        
+        const response = await axios.get(`${API}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true
+        });
+        
+        setUser(response.data);
+        await loadDoubts(token);
+      } catch (error) {
+        navigate('/login');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    checkAuth();
+  }, [navigate]);
+  
+  const loadDoubts = async (token) => {
+    try {
+      const response = await axios.get(`${API}/doubts/student`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setDoubts(response.data);
+    } catch (error) {
+      toast.error('Failed to load doubts');
+    }
+  };
+  
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `${API}/doubts`,
+        formData,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setDoubts([response.data, ...doubts]);
+      setFormData({ subject: '', message: '', use_ai: true });
+      
+      if (response.data.is_ai_response) {
+        toast.success('AI response generated!');
+      } else {
+        toast.success('Doubt submitted! A teacher will respond soon.');
+      }
+    } catch (error) {
+      toast.error('Failed to submit doubt');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="min-h-screen bg-slate-50">
+      {/* Sidebar */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+        <div className="flex items-center justify-between p-6 border-b border-slate-200">
+          <img 
+            src="https://customer-assets.emergentagent.com/job_board-ready-3/artifacts/9esikr1w_ChatGPT%20Image%20Mar%209%2C%202026%2C%2001_45_09%20PM.png" 
+            alt="NextGen Learning" 
+            className="h-10"
+          />
+          <button onClick={() => setSidebarOpen(false)} className="md:hidden">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+        
+        <nav className="p-4 space-y-2">
+          <Link to="/student/dashboard">
+            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 text-slate-700" data-testid="sidebar-dashboard-btn">
+              <BookOpen className="w-5 h-5" />
+              <span>Dashboard</span>
+            </button>
+          </Link>
+          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-50 text-blue-600 font-medium" data-testid="sidebar-doubts-btn">
+            <MessageCircle className="w-5 h-5" />
+            <span>Doubts</span>
+          </button>
+        </nav>
+        
+        <div className="absolute bottom-0 w-full p-4 border-t border-slate-200">
+          <Button onClick={handleLogout} variant="ghost" className="w-full justify-start text-slate-700" data-testid="sidebar-logout-btn">
+            <LogOut className="w-5 h-5 mr-3" />
+            Logout
+          </Button>
+        </div>
+      </aside>
+      
+      {/* Main Content */}
+      <div className="md:pl-64">
+        <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-200 h-16 flex items-center px-6">
+          <button onClick={() => setSidebarOpen(true)} className="md:hidden mr-4">
+            <Menu className="w-6 h-6" />
+          </button>
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold heading-font flex items-center gap-2" data-testid="doubts-title">
+              <Sparkles className="w-6 h-6 text-violet-600" />
+              AI Doubt Assistant
+            </h1>
+          </div>
+        </header>
+        
+        <main className="p-6">
+          <div className="max-w-4xl mx-auto space-y-6">
+            {/* Ask Doubt Form */}
+            <Card className="p-6 gradient-brand text-white">
+              <h2 className="text-2xl font-bold heading-font mb-4">Ask Your Doubt</h2>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <Label htmlFor="subject" className="text-white">Subject</Label>
+                  <Input 
+                    id="subject"
+                    placeholder="e.g., Mathematics, Physics, Chemistry"
+                    value={formData.subject}
+                    onChange={(e) => setFormData({...formData, subject: e.target.value})}
+                    required
+                    className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                    data-testid="doubt-subject-input"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="message" className="text-white">Your Question</Label>
+                  <Textarea 
+                    id="message"
+                    placeholder="Describe your doubt in detail..."
+                    value={formData.message}
+                    onChange={(e) => setFormData({...formData, message: e.target.value})}
+                    required
+                    rows={4}
+                    className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                    data-testid="doubt-message-input"
+                  />
+                </div>
+                
+                <div className="flex items-center gap-2 text-sm">
+                  <input 
+                    type="checkbox"
+                    id="use_ai"
+                    checked={formData.use_ai}
+                    onChange={(e) => setFormData({...formData, use_ai: e.target.checked})}
+                    className="rounded"
+                    data-testid="doubt-use-ai-checkbox"
+                  />
+                  <label htmlFor="use_ai" className="text-white/90">
+                    Get instant AI response (powered by GPT-5.2)
+                  </label>
+                </div>
+                
+                <Button 
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full bg-white text-blue-600 hover:bg-slate-100"
+                  data-testid="submit-doubt-btn"
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      Submit Doubt
+                    </>
+                  )}
+                </Button>
+              </form>
+            </Card>
+            
+            {/* Previous Doubts */}
+            <div>
+              <h2 className="text-2xl font-semibold heading-font mb-4">Your Doubts</h2>
+              
+              {doubts.length === 0 ? (
+                <Card className="p-12 text-center">
+                  <MessageCircle className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                  <p className="text-slate-600">No doubts asked yet</p>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {doubts.map((doubt) => (
+                    <Card key={doubt.doubt_id} className="p-6" data-testid={`doubt-${doubt.doubt_id}`}>
+                      <div className="flex items-start gap-4">
+                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium flex-shrink-0">
+                          {doubt.student_name?.charAt(0) || 'S'}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="font-semibold">{doubt.subject}</span>
+                            <span className="text-xs text-slate-500">
+                              {new Date(doubt.created_at).toLocaleDateString('en-IN')}
+                            </span>
+                            {doubt.is_ai_response && (
+                              <span className="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <Sparkles className="w-3 h-3" />
+                                AI
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-slate-700 mb-3">{doubt.message}</p>
+                          
+                          {doubt.ai_response && (
+                            <div className="mt-4 p-4 bg-violet-50 rounded-lg border border-violet-200">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Sparkles className="w-4 h-4 text-violet-600" />
+                                <span className="font-semibold text-violet-900">AI Response</span>
+                              </div>
+                              <p className="text-slate-700 whitespace-pre-wrap">{doubt.ai_response}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default Doubts;
