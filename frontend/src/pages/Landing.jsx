@@ -58,6 +58,7 @@ const Landing = () => {
               <a href="#courses" className="text-slate-700 hover:text-blue-600 font-medium transition-colors" data-testid="nav-courses-link">Courses</a>
               <a href="#pricing" className="text-slate-700 hover:text-blue-600 font-medium transition-colors" data-testid="nav-pricing-link">Pricing</a>
               <a href="#features" className="text-slate-700 hover:text-blue-600 font-medium transition-colors" data-testid="nav-features-link">Features</a>
+              <a href="#contact" className="text-slate-700 hover:text-blue-600 font-medium transition-colors" data-testid="nav-contact-link">Contact</a>
               <Link to="/login" data-testid="nav-login-btn">
                 <Button variant="ghost" className="text-slate-700">Login</Button>
               </Link>
@@ -238,6 +239,50 @@ const Landing = () => {
         </div>
       </section>
       
+      {/* Contact Us Section */}
+      <section id="contact" className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-5xl font-semibold heading-font tracking-tight mb-4" data-testid="contact-heading">Get In Touch</h2>
+            <p className="text-lg text-slate-600">Have questions? We're here to help you get started</p>
+          </div>
+          
+          <div className="max-w-3xl mx-auto">
+            <Card className="p-8 md:p-12 text-center">
+              <div className="mb-8">
+                <div className="w-20 h-20 rounded-full gradient-brand flex items-center justify-center text-white text-3xl mx-auto mb-6">
+                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-semibold heading-font mb-2">Contact Our Founder</h3>
+                <p className="text-lg text-slate-600 mb-6">Speak directly with our founder for any queries or enrollment assistance</p>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-center gap-3 text-slate-700">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span className="text-xl font-medium">Yatindra Mankesh Mishra</span>
+                </div>
+                
+                <a href="tel:+919619974466" className="flex items-center justify-center gap-3 text-slate-700 hover:text-blue-600 transition-colors group">
+                  <svg className="w-5 h-5 text-blue-600 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                  <span className="text-2xl font-bold">+91 9619974466</span>
+                </a>
+              </div>
+              
+              <div className="mt-8 pt-8 border-t border-slate-200">
+                <p className="text-sm text-slate-600">Available Monday - Saturday, 9 AM - 8 PM IST</p>
+              </div>
+            </Card>
+          </div>
+        </div>
+      </section>
+      
       {/* Footer */}
       <footer className="bg-slate-900 text-slate-300 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -263,10 +308,22 @@ const Landing = () => {
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold text-white mb-4">Legal</h4>
+              <h4 className="font-semibold text-white mb-4">Contact</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
+                <li className="flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span>Yatindra Mankesh Mishra</span>
+                </li>
+                <li>
+                  <a href="tel:+919619974466" className="hover:text-white transition-colors flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                    +91 9619974466
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
