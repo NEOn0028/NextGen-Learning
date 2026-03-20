@@ -1185,6 +1185,105 @@ async def get_analytics(current_user: User = Depends(require_role([UserRole.ADMI
         "total_revenue": total_revenue[0]['total'] if total_revenue else 0
     }
 
+# ============ TEACHER ENDPOINTS ============
+
+@api_router.post("/teacher/update-performance")
+async def update_student_performance(
+    student_id: str,
+    course_id: str,
+    marks: str = None,
+    remarks: str = None,
+    attendance: str = None,
+    progress_level: str = None,
+    current_user: User = Depends(require_role([UserRole.TEACHER, UserRole.ADMIN]))
+):
+    """Update student performance data"""
+    performance_id = f"perf_{uuid.uuid4().hex[:12]}"
+    
+    performance_doc = {
+        "performance_id": performance_id,
+        "student_id": student_id,
+        "course_id": course_id,
+        "teacher_id": current_user.user_id,
+        "marks": marks,
+        "remarks": remarks,
+        "attendance": attendance,
+        "progress_level": progress_level,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Upsert (update or insert)
+    await db.student_performance.update_one(
+        {"student_id": student_id, "course_id": course_id},
+        {"$set": performance_doc},
+        upsert=True
+    )
+    
+    return {"message": "Performance updated successfully"}
+
+@api_router.delete("/lectures/{lecture_id}")
+async def delete_lecture(
+    lecture_id: str,
+    current_user: User = Depends(require_role([UserRole.TEACHER, UserRole.ADMIN]))
+):
+    """Delete a lecture"""
+    result = await db.lectures.delete_one({"lecture_id": lecture_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Lecture not found")
+    return {"message": "Lecture deleted"}
+
+@api_router.put("/lectures/{lecture_id}")
+async def update_lecture(
+    lecture_id: str,
+    lecture_data: LectureCreate,
+    current_user: User = Depends(require_role([UserRole.TEACHER, UserRole.ADMIN]))
+):
+    """Update a lecture"""
+    result = await db.lectures.update_one(
+        {"lecture_id": lecture_id},
+        {"$set": lecture_data.model_dump()}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Lecture not found")
+    return {"message": "Lecture updated"}
+
+@api_router.delete("/live-classes/{class_id}")
+async def delete_live_class(
+    class_id: str,
+    current_user: User = Depends(require_role([UserRole.TEACHER, UserRole.ADMIN]))
+):
+    """Delete a live class"""
+    result = await db.live_classes.delete_one({"class_id": class_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Live class not found")
+    return {"message": "Live class deleted"}
+
+@api_router.delete("/tests/{test_id}")
+async def delete_test(
+    test_id: str,
+    current_user: User = Depends(require_role([UserRole.TEACHER, UserRole.ADMIN]))
+):
+    """Delete a test"""
+    result = await db.tests.delete_one({"test_id": test_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Test not found")
+    return {"message": "Test deleted"}
+
+@api_router.put("/tests/{test_id}")
+async def update_test(
+    test_id: str,
+    test_data: TestCreate,
+    current_user: User = Depends(require_role([UserRole.TEACHER, UserRole.ADMIN]))
+):
+    """Update a test"""
+    result = await db.tests.update_one(
+        {"test_id": test_id},
+        {"$set": test_data.model_dump()}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Test not found")
+    return {"message": "Test updated"}
+
 # ============ PARENT ENDPOINTS ============
 
 @api_router.get("/parent/children")
