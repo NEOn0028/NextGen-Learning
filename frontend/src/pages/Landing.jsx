@@ -217,44 +217,45 @@ const Landing = () => {
             <p className="text-xl text-slate-400">Premium 1-on-1 mentorship starting from ₹6,999/month</p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {[
-              { title: 'Class 6-8 (Foundation)', price: '₹5,999', popular: false },
-              { title: 'Class 9-10 (Board Prep)', price: '₹6,999', popular: true },
-              { title: 'Commerce & Humanities', price: '₹7,999', popular: false }
+              { title: 'Test Course', price: '₹1', popular: false, desc: 'Test the platform' },
+              { title: 'Class 6-8 (Foundation)', price: '₹5,999', popular: false, desc: 'Build strong basics' },
+              { title: 'Humanities (Class 6-10)', price: '₹7,999', popular: true, desc: 'History, Geography, Political Science' },
+              { title: 'Commerce (Class 6-10)', price: '₹9,999', popular: false, desc: 'Accountancy, Business Studies, Economics' }
             ].map((plan, idx) => (
-              <Card key={idx} className={`p-8 ${plan.popular ? 'bg-gradient-to-br from-blue-900/50 to-violet-900/50 border-blue-500/50 ring-2 ring-blue-500/30' : 'bg-slate-800/50 border-slate-700'} relative overflow-hidden hover-lift`}>
+              <Card key={idx} className={`p-6 ${plan.popular ? 'bg-gradient-to-br from-blue-900/50 to-violet-900/50 border-blue-500/50 ring-2 ring-blue-500/30' : 'bg-slate-800/50 border-slate-700'} relative overflow-hidden hover-lift`}>
                 {plan.popular && (
                   <Badge className="absolute top-4 right-4 bg-gradient-to-r from-blue-600 to-violet-600 text-white">
                     Most Popular
                   </Badge>
                 )}
-                <div className="mb-6">
-                  <h3 className="text-2xl font-bold text-white mb-2">{plan.title}</h3>
+                <div className="mb-4">
+                  <h3 className="text-xl font-bold text-white mb-1">{plan.title}</h3>
+                  <p className="text-sm text-slate-400 mb-3">{plan.desc}</p>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-bold text-white">{plan.price}</span>
+                    <span className="text-4xl font-bold text-white">{plan.price}</span>
                     <span className="text-slate-400">/month</span>
                   </div>
                 </div>
                 
-                <div className="space-y-4 mb-8">
+                <div className="space-y-3 mb-6">
                   {[
-                    'Dedicated Personal Mentor',
-                    'Weekly Tests & Analysis',
-                    'Performance Reports to Parents',
-                    'Unlimited Doubt Support',
-                    'Study Materials Included',
-                    'Live Classes + Recordings'
+                    'Personal Mentor',
+                    'Weekly Tests',
+                    'Parent Reports',
+                    'Doubt Support',
+                    'Live Classes'
                   ].map((feature, i) => (
-                    <div key={i} className="flex items-center gap-3 text-slate-200">
-                      <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                    <div key={i} className="flex items-center gap-2 text-slate-200 text-sm">
+                      <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
                       <span>{feature}</span>
                     </div>
                   ))}
                 </div>
                 
                 <Link to="/signup">
-                  <Button className={`w-full h-12 ${plan.popular ? 'bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700' : 'bg-slate-700 hover:bg-slate-600'} text-white`}>
+                  <Button className={`w-full h-10 ${plan.popular ? 'bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700' : 'bg-slate-700 hover:bg-slate-600'} text-white`}>
                     Enroll Now
                   </Button>
                 </Link>
