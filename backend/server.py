@@ -95,6 +95,7 @@ class Course(BaseModel):
     teacher_id: str
     teacher_name: Optional[str] = None
     thumbnail: Optional[str] = None
+    published: bool = True  # Whether course is visible to students
     created_at: datetime
 
 class CourseCreate(BaseModel):
@@ -105,6 +106,17 @@ class CourseCreate(BaseModel):
     description: str
     price: int
     thumbnail: Optional[str] = None
+    published: bool = True
+
+class CourseUpdate(BaseModel):
+    title: Optional[str] = None
+    class_level: Optional[str] = None
+    stream: Optional[str] = None
+    subject: Optional[str] = None
+    description: Optional[str] = None
+    price: Optional[int] = None
+    thumbnail: Optional[str] = None
+    published: Optional[bool] = None
 
 class Enrollment(BaseModel):
     enrollment_id: str
@@ -250,6 +262,46 @@ class Announcement(BaseModel):
 class AnnouncementCreate(BaseModel):
     title: str
     content: str
+
+# ============ 1:1 BOOKING SYSTEM MODELS ============
+
+class TeacherAvailability(BaseModel):
+    availability_id: str
+    teacher_id: str
+    day_of_week: int  # 0=Monday, 6=Sunday
+    start_time: str  # "09:00"
+    end_time: str  # "17:00"
+    slot_duration: int = 30  # minutes
+    is_active: bool = True
+
+class TeacherAvailabilityCreate(BaseModel):
+    day_of_week: int
+    start_time: str
+    end_time: str
+    slot_duration: int = 30
+
+class BookingSlot(BaseModel):
+    slot_id: str
+    teacher_id: str
+    student_id: str
+    student_name: str
+    student_email: str
+    date: str  # "2026-03-25"
+    start_time: str  # "10:00"
+    end_time: str  # "10:30"
+    status: str  # "pending", "approved", "rejected", "completed", "cancelled"
+    subject: Optional[str] = None
+    notes: Optional[str] = None
+    meeting_link: Optional[str] = None
+    created_at: datetime
+
+class BookingSlotCreate(BaseModel):
+    teacher_id: str
+    date: str
+    start_time: str
+    end_time: str
+    subject: Optional[str] = None
+    notes: Optional[str] = None
 
 class PaymentOrder(BaseModel):
     order_id: str
@@ -581,6 +633,51 @@ async def delete_course(
     await db.courses.delete_one({"course_id": course_id})
     
     return {"message": "Course and all associated data deleted successfully"}
+
+@api_router.put("/courses/{course_id}")
+async def update_course(
+    course_id: str,
+    course_data: CourseUpdate,
+    current_user: User = Depends(require_role([UserRole.TEACHER, UserRole.ADMIN]))
+):
+    # Check if course exists and belongs to the teacher (or admin)
+    course = await db.courses.find_one({"course_id": course_id})
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    # Only allow the course owner (teacher) or admin to update
+    if current_user.role != UserRole.ADMIN and course.get('teacher_id') != current_user.user_id:
+        raise HTTPException(status_code=403, detail="You can only edit your own courses")
+    
+    # Build update dict with only provided fields
+    update_data = {k: v for k, v in course_data.model_dump().items() if v is not None}
+    
+    if update_data:
+        await db.courses.update_one({"course_id": course_id}, {"$set": update_data})
+    
+    # Get updated course
+    updated_course = await db.courses.find_one({"course_id": course_id}, {"_id": 0})
+    if isinstance(updated_course['created_at'], str):
+        updated_course['created_at'] = datetime.fromisoformat(updated_course['created_at'])
+    
+    return Course(**updated_course)
+
+@api_router.patch("/courses/{course_id}/publish")
+async def toggle_course_publish(
+    course_id: str,
+    current_user: User = Depends(require_role([UserRole.TEACHER, UserRole.ADMIN]))
+):
+    course = await db.courses.find_one({"course_id": course_id})
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    if current_user.role != UserRole.ADMIN and course.get('teacher_id') != current_user.user_id:
+        raise HTTPException(status_code=403, detail="You can only modify your own courses")
+    
+    new_status = not course.get('published', True)
+    await db.courses.update_one({"course_id": course_id}, {"$set": {"published": new_status}})
+    
+    return {"published": new_status, "message": f"Course {'published' if new_status else 'unpublished'} successfully"}
 
 # ============ ENROLLMENT ENDPOINTS ============
 
@@ -1309,6 +1406,275 @@ async def update_test(
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Test not found")
     return {"message": "Test updated"}
+
+# ============ 1:1 BOOKING SYSTEM ENDPOINTS ============
+
+@api_router.get("/teachers")
+async def get_all_teachers():
+    """Get all teachers for booking selection"""
+    teachers = await db.users.find(
+        {"role": UserRole.TEACHER},
+        {"_id": 0, "password_hash": 0}
+    ).to_list(1000)
+    return teachers
+
+@api_router.post("/teacher/availability")
+async def set_availability(
+    availability_data: TeacherAvailabilityCreate,
+    current_user: User = Depends(require_role([UserRole.TEACHER]))
+):
+    """Teacher sets their availability slots"""
+    availability_id = f"avail_{uuid.uuid4().hex[:12]}"
+    
+    availability_doc = {
+        "availability_id": availability_id,
+        "teacher_id": current_user.user_id,
+        **availability_data.model_dump(),
+        "is_active": True
+    }
+    
+    # Check for overlapping availability
+    existing = await db.teacher_availability.find_one({
+        "teacher_id": current_user.user_id,
+        "day_of_week": availability_data.day_of_week,
+        "is_active": True
+    })
+    
+    if existing:
+        # Update existing
+        await db.teacher_availability.update_one(
+            {"availability_id": existing['availability_id']},
+            {"$set": availability_data.model_dump()}
+        )
+        return {"message": "Availability updated", "availability_id": existing['availability_id']}
+    
+    await db.teacher_availability.insert_one(availability_doc)
+    return {"message": "Availability set", "availability_id": availability_id}
+
+@api_router.get("/teacher/availability")
+async def get_my_availability(current_user: User = Depends(require_role([UserRole.TEACHER]))):
+    """Get teacher's own availability"""
+    availability = await db.teacher_availability.find(
+        {"teacher_id": current_user.user_id, "is_active": True},
+        {"_id": 0}
+    ).to_list(100)
+    return availability
+
+@api_router.delete("/teacher/availability/{availability_id}")
+async def delete_availability(
+    availability_id: str,
+    current_user: User = Depends(require_role([UserRole.TEACHER]))
+):
+    """Delete an availability slot"""
+    result = await db.teacher_availability.delete_one({
+        "availability_id": availability_id,
+        "teacher_id": current_user.user_id
+    })
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Availability not found")
+    return {"message": "Availability deleted"}
+
+@api_router.get("/teacher/{teacher_id}/availability")
+async def get_teacher_availability(teacher_id: str):
+    """Get a specific teacher's availability (for students)"""
+    availability = await db.teacher_availability.find(
+        {"teacher_id": teacher_id, "is_active": True},
+        {"_id": 0}
+    ).to_list(100)
+    
+    # Also get existing bookings to mark unavailable slots
+    bookings = await db.booking_slots.find(
+        {"teacher_id": teacher_id, "status": {"$in": ["pending", "approved"]}},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    return {"availability": availability, "booked_slots": bookings}
+
+@api_router.post("/bookings")
+async def create_booking(
+    booking_data: BookingSlotCreate,
+    current_user: User = Depends(require_role([UserRole.STUDENT]))
+):
+    """Student books a 1:1 session with teacher"""
+    slot_id = f"slot_{uuid.uuid4().hex[:12]}"
+    
+    # Check if slot is already booked
+    existing = await db.booking_slots.find_one({
+        "teacher_id": booking_data.teacher_id,
+        "date": booking_data.date,
+        "start_time": booking_data.start_time,
+        "status": {"$in": ["pending", "approved"]}
+    })
+    
+    if existing:
+        raise HTTPException(status_code=400, detail="This slot is already booked")
+    
+    booking_doc = {
+        "slot_id": slot_id,
+        "student_id": current_user.user_id,
+        "student_name": current_user.name,
+        "student_email": current_user.email,
+        **booking_data.model_dump(),
+        "status": "pending",
+        "meeting_link": None,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.booking_slots.insert_one(booking_doc)
+    return {"message": "Booking request submitted", "slot_id": slot_id}
+
+@api_router.get("/bookings/my")
+async def get_my_bookings(current_user: User = Depends(get_current_user)):
+    """Get bookings for current user (student or teacher)"""
+    if current_user.role == UserRole.TEACHER:
+        # Get bookings where this teacher is the recipient
+        bookings = await db.booking_slots.find(
+            {"teacher_id": current_user.user_id},
+            {"_id": 0}
+        ).sort("date", -1).to_list(1000)
+    else:
+        # Get bookings where this student is the requester
+        bookings = await db.booking_slots.find(
+            {"student_id": current_user.user_id},
+            {"_id": 0}
+        ).sort("date", -1).to_list(1000)
+    
+    # Add teacher names for student view
+    if current_user.role != UserRole.TEACHER:
+        for booking in bookings:
+            teacher = await db.users.find_one({"user_id": booking['teacher_id']}, {"name": 1})
+            booking['teacher_name'] = teacher['name'] if teacher else 'Unknown'
+    
+    return bookings
+
+@api_router.patch("/bookings/{slot_id}/approve")
+async def approve_booking(
+    slot_id: str,
+    meeting_link: Optional[str] = None,
+    current_user: User = Depends(require_role([UserRole.TEACHER, UserRole.ADMIN]))
+):
+    """Teacher approves a booking and optionally adds meeting link"""
+    booking = await db.booking_slots.find_one({"slot_id": slot_id})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    if current_user.role == UserRole.TEACHER and booking['teacher_id'] != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Not your booking")
+    
+    update_data = {"status": "approved"}
+    if meeting_link:
+        update_data["meeting_link"] = meeting_link
+    
+    await db.booking_slots.update_one({"slot_id": slot_id}, {"$set": update_data})
+    return {"message": "Booking approved"}
+
+@api_router.patch("/bookings/{slot_id}/reject")
+async def reject_booking(
+    slot_id: str,
+    current_user: User = Depends(require_role([UserRole.TEACHER, UserRole.ADMIN]))
+):
+    """Teacher rejects a booking"""
+    booking = await db.booking_slots.find_one({"slot_id": slot_id})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    if current_user.role == UserRole.TEACHER and booking['teacher_id'] != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Not your booking")
+    
+    await db.booking_slots.update_one({"slot_id": slot_id}, {"$set": {"status": "rejected"}})
+    return {"message": "Booking rejected"}
+
+@api_router.patch("/bookings/{slot_id}/cancel")
+async def cancel_booking(
+    slot_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Student or teacher cancels a booking"""
+    booking = await db.booking_slots.find_one({"slot_id": slot_id})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    # Check permission
+    if current_user.role == UserRole.STUDENT and booking['student_id'] != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Not your booking")
+    if current_user.role == UserRole.TEACHER and booking['teacher_id'] != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Not your booking")
+    
+    await db.booking_slots.update_one({"slot_id": slot_id}, {"$set": {"status": "cancelled"}})
+    return {"message": "Booking cancelled"}
+
+@api_router.patch("/bookings/{slot_id}/meeting-link")
+async def update_meeting_link(
+    slot_id: str,
+    meeting_link: str,
+    current_user: User = Depends(require_role([UserRole.TEACHER]))
+):
+    """Teacher adds/updates meeting link for approved booking"""
+    booking = await db.booking_slots.find_one({"slot_id": slot_id})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    if booking['teacher_id'] != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Not your booking")
+    
+    await db.booking_slots.update_one({"slot_id": slot_id}, {"$set": {"meeting_link": meeting_link}})
+    return {"message": "Meeting link updated"}
+
+# ============ STUDENT ENROLLED COURSES ENDPOINTS ============
+
+@api_router.get("/student/enrolled-courses")
+async def get_enrolled_courses(current_user: User = Depends(get_current_user)):
+    """Get all courses the student is enrolled in with content access"""
+    enrollments = await db.enrollments.find(
+        {"student_id": current_user.user_id, "payment_status": "completed"},
+        {"_id": 0}
+    ).to_list(100)
+    
+    enrolled_courses = []
+    for enrollment in enrollments:
+        course = await db.courses.find_one({"course_id": enrollment['course_id']}, {"_id": 0})
+        if course:
+            # Get course content
+            lectures = await db.lectures.find({"course_id": course['course_id']}, {"_id": 0}).to_list(100)
+            live_classes = await db.live_classes.find({"course_id": course['course_id']}, {"_id": 0}).to_list(100)
+            assignments = await db.assignments.find({"course_id": course['course_id']}, {"_id": 0}).to_list(100)
+            tests = await db.tests.find({"course_id": course['course_id']}, {"_id": 0}).to_list(100)
+            
+            enrolled_courses.append({
+                "course": course,
+                "enrollment": enrollment,
+                "lectures": lectures,
+                "live_classes": live_classes,
+                "assignments": assignments,
+                "tests": tests
+            })
+    
+    return enrolled_courses
+
+@api_router.get("/student/upcoming-classes")
+async def get_upcoming_classes(current_user: User = Depends(get_current_user)):
+    """Get all upcoming live classes for enrolled courses"""
+    enrollments = await db.enrollments.find(
+        {"student_id": current_user.user_id, "payment_status": "completed"},
+        {"course_id": 1}
+    ).to_list(100)
+    
+    course_ids = [e['course_id'] for e in enrollments]
+    
+    # Get upcoming live classes
+    now = datetime.now(timezone.utc).isoformat()
+    upcoming_classes = await db.live_classes.find({
+        "course_id": {"$in": course_ids},
+        "scheduled_at": {"$gte": now}
+    }, {"_id": 0}).sort("scheduled_at", 1).to_list(100)
+    
+    # Add course info
+    for cls in upcoming_classes:
+        course = await db.courses.find_one({"course_id": cls['course_id']}, {"title": 1, "subject": 1})
+        cls['course_title'] = course['title'] if course else 'Unknown'
+        cls['course_subject'] = course['subject'] if course else 'Unknown'
+    
+    return upcoming_classes
 
 # ============ PARENT ENDPOINTS ============
 
