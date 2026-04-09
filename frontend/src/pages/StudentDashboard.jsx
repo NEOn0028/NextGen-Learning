@@ -2,16 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { 
   BookOpen, Video, Calendar, MessageCircle, TrendingUp, LogOut, Menu, X, 
-  Sparkles, Play, Clock, Users, CalendarDays, ChevronRight, FileText, Award
+  Sparkles, Play, Clock, Users, CalendarDays, ChevronRight, FileText, Award, ExternalLink
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -22,25 +18,11 @@ const StudentDashboard = () => {
   const [user, setUser] = useState(null);
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [upcomingClasses, setUpcomingClasses] = useState([]);
-  const [teachers, setTeachers] = useState([]);
-  const [myBookings, setMyBookings] = useState([]);
+  const [mySessions, setMySessions] = useState([]);
+  const [teacher, setTeacher] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
-  
-  // Booking form states
-  const [showBookingForm, setShowBookingForm] = useState(false);
-  const [selectedTeacher, setSelectedTeacher] = useState(null);
-  const [teacherAvailability, setTeacherAvailability] = useState(null);
-  const [bookingForm, setBookingForm] = useState({
-    date: '',
-    start_time: '',
-    end_time: '',
-    subject: '',
-    notes: ''
-  });
-
-  const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
   useEffect(() => {
     checkAuth();
@@ -70,17 +52,27 @@ const StudentDashboard = () => {
 
   const loadAllData = async (token) => {
     try {
-      const [enrolledRes, upcomingRes, teachersRes, bookingsRes] = await Promise.all([
+      const [enrolledRes, upcomingRes, teachersRes] = await Promise.all([
         axios.get(`${API}/student/enrolled-courses`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/student/upcoming-classes`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] })),
-        axios.get(`${API}/teachers`),
-        axios.get(`${API}/bookings/my`, { headers: { Authorization: `Bearer ${token}` } })
+        axios.get(`${API}/teachers`)
       ]);
       
       setEnrolledCourses(enrolledRes.data);
       setUpcomingClasses(upcomingRes.data);
-      setTeachers(teachersRes.data);
-      setMyBookings(bookingsRes.data);
+      
+      // Set teacher info (we only have one teacher now)
+      if (teachersRes.data.length > 0) {
+        setTeacher(teachersRes.data[0]);
+      }
+      
+      // Get scheduled sessions for this student
+      try {
+        const sessionsRes = await axios.get(`${API}/bookings/my`, { headers: { Authorization: `Bearer ${token}` } });
+        setMySessions(sessionsRes.data.filter(s => s.status === 'scheduled'));
+      } catch (e) {
+        setMySessions([]);
+      }
     } catch (error) {
       console.error('Failed to load data:', error);
     }
@@ -92,57 +84,6 @@ const StudentDashboard = () => {
     navigate('/login');
   };
 
-  const handleSelectTeacher = async (teacher) => {
-    setSelectedTeacher(teacher);
-    try {
-      const response = await axios.get(`${API}/teacher/${teacher.user_id}/availability`);
-      setTeacherAvailability(response.data);
-      setShowBookingForm(true);
-    } catch (error) {
-      toast.error('Failed to load teacher availability');
-    }
-  };
-
-  const handleBookSession = async (e) => {
-    e.preventDefault();
-    if (!selectedTeacher) return;
-    
-    try {
-      const token = localStorage.getItem('token');
-      await axios.post(
-        `${API}/bookings`,
-        {
-          teacher_id: selectedTeacher.user_id,
-          ...bookingForm
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      toast.success('Booking request submitted! Waiting for teacher approval.');
-      setShowBookingForm(false);
-      setSelectedTeacher(null);
-      setBookingForm({ date: '', start_time: '', end_time: '', subject: '', notes: '' });
-      await loadAllData(token);
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to submit booking');
-    }
-  };
-
-  const handleCancelBooking = async (slotId) => {
-    if (!window.confirm('Are you sure you want to cancel this booking?')) return;
-    
-    try {
-      const token = localStorage.getItem('token');
-      await axios.patch(`${API}/bookings/${slotId}/cancel`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      toast.success('Booking cancelled');
-      await loadAllData(token);
-    } catch (error) {
-      toast.error('Failed to cancel booking');
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -150,9 +91,6 @@ const StudentDashboard = () => {
       </div>
     );
   }
-
-  const pendingBookings = myBookings.filter(b => b.status === 'pending');
-  const approvedBookings = myBookings.filter(b => b.status === 'approved');
 
   return (
     <div className="min-h-screen bg-slate-950">
@@ -191,12 +129,15 @@ const StudentDashboard = () => {
             <span>My Courses</span>
           </button>
           <button 
-            onClick={() => setActiveTab('bookings')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${activeTab === 'bookings' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
-            data-testid="nav-bookings"
+            onClick={() => setActiveTab('sessions')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${activeTab === 'sessions' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+            data-testid="nav-sessions"
           >
             <CalendarDays className="w-5 h-5" />
-            <span>1:1 Sessions</span>
+            <span>My Sessions</span>
+            {mySessions.length > 0 && (
+              <Badge className="ml-auto bg-green-600 text-white">{mySessions.length}</Badge>
+            )}
           </button>
           <Link to="/courses">
             <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white font-medium transition-colors">
@@ -261,7 +202,7 @@ const StudentDashboard = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-slate-400">Sessions</p>
-                      <p className="text-2xl font-bold text-white">{approvedBookings.length}</p>
+                      <p className="text-2xl font-bold text-white">{mySessions.length}</p>
                     </div>
                     <Users className="w-8 h-8 text-green-500" />
                   </div>
@@ -277,6 +218,34 @@ const StudentDashboard = () => {
                 </Card>
               </div>
 
+              {/* Teacher Info Card */}
+              {teacher && (
+                <Card className="p-6 bg-gradient-to-r from-violet-900/50 to-blue-900/50 border-slate-800">
+                  <h3 className="text-lg font-semibold text-white mb-4">Your Teacher</h3>
+                  <div className="flex items-start gap-4">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-r from-violet-600 to-blue-600 flex items-center justify-center text-white font-bold text-2xl">
+                      {teacher.name?.charAt(0)}
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold text-white">{teacher.name}</h4>
+                      {teacher.bio && (
+                        <p className="text-slate-300 mt-1">{teacher.bio}</p>
+                      )}
+                      {teacher.subjects && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {teacher.subjects.map((subj, idx) => (
+                            <Badge key={idx} className="bg-violet-600">{subj}</Badge>
+                          ))}
+                        </div>
+                      )}
+                      {teacher.class_range && (
+                        <p className="text-sm text-slate-400 mt-2">Teaches: Class {teacher.class_range}</p>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              )}
+
               {/* Upcoming Live Classes */}
               {upcomingClasses.length > 0 && (
                 <div>
@@ -290,7 +259,9 @@ const StudentDashboard = () => {
                             <p className="text-sm text-slate-400">{cls.course_title}</p>
                             <div className="flex items-center gap-4 mt-2 text-sm">
                               <span className="text-blue-400">{new Date(cls.scheduled_at).toLocaleString()}</span>
-                              <Badge variant="secondary">{cls.platform}</Badge>
+                              <Badge variant="secondary" className={cls.platform === 'zoom' ? 'bg-blue-600' : 'bg-green-600'}>
+                                {cls.platform === 'zoom' ? 'Zoom' : 'Google Meet'}
+                              </Badge>
                             </div>
                           </div>
                           <a href={cls.meeting_link} target="_blank" rel="noopener noreferrer">
@@ -299,6 +270,40 @@ const StudentDashboard = () => {
                               Join
                             </Button>
                           </a>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Scheduled 1:1 Sessions */}
+              {mySessions.length > 0 && (
+                <div>
+                  <h2 className="text-xl font-bold text-white mb-4">Upcoming 1:1 Sessions</h2>
+                  <div className="space-y-3">
+                    {mySessions.map((session) => (
+                      <Card key={session.slot_id} className="p-4 bg-slate-900 border-slate-800">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-semibold text-white">{session.subject || '1:1 Session'}</h3>
+                            <p className="text-sm text-slate-400">with {session.teacher_name || 'Teacher'}</p>
+                            <div className="flex items-center gap-4 mt-2 text-sm">
+                              <span className="text-blue-400">{session.date}</span>
+                              <span className="text-slate-400">{session.start_time} - {session.end_time}</span>
+                              <Badge variant="secondary" className={session.platform === 'zoom' ? 'bg-blue-600' : 'bg-green-600'}>
+                                {session.platform === 'zoom' ? 'Zoom' : 'Google Meet'}
+                              </Badge>
+                            </div>
+                          </div>
+                          {session.meeting_link && (
+                            <a href={session.meeting_link} target="_blank" rel="noopener noreferrer">
+                              <Button className="bg-green-600 hover:bg-green-700">
+                                <ExternalLink className="w-4 h-4 mr-2" />
+                                Join
+                              </Button>
+                            </a>
+                          )}
                         </div>
                       </Card>
                     ))}
@@ -324,14 +329,16 @@ const StudentDashboard = () => {
 
                 <Card className="p-6 bg-gradient-to-br from-green-900/50 to-emerald-900/50 border-slate-800">
                   <div className="flex items-center gap-3 mb-4">
-                    <Users className="w-8 h-8 text-green-400" />
-                    <h3 className="text-xl font-bold text-white">Book 1:1 Session</h3>
+                    <BookOpen className="w-8 h-8 text-green-400" />
+                    <h3 className="text-xl font-bold text-white">Explore Courses</h3>
                   </div>
-                  <p className="text-slate-300 mb-4">Schedule a personal session with your teacher</p>
-                  <Button onClick={() => setActiveTab('bookings')} className="bg-green-600 hover:bg-green-700">
-                    Book Now
-                    <ChevronRight className="w-4 h-4 ml-2" />
-                  </Button>
+                  <p className="text-slate-300 mb-4">Browse available courses in Commerce and Humanities</p>
+                  <Link to="/courses">
+                    <Button className="bg-green-600 hover:bg-green-700">
+                      Browse Courses
+                      <ChevronRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </Link>
                 </Card>
               </div>
 
@@ -497,206 +504,58 @@ const StudentDashboard = () => {
             </div>
           )}
 
-          {/* Bookings Tab */}
-          {activeTab === 'bookings' && (
+          {/* Sessions Tab */}
+          {activeTab === 'sessions' && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-white">1:1 Sessions</h2>
-                <Button onClick={() => setShowBookingForm(true)} className="bg-blue-600 hover:bg-blue-700">
-                  Book New Session
-                </Button>
-              </div>
+              <h2 className="text-2xl font-bold text-white">My 1:1 Sessions</h2>
+              
+              <Card className="p-4 bg-blue-900/30 border-blue-800">
+                <p className="text-blue-300 text-sm">
+                  💡 Sessions are scheduled by your teacher. When a session is scheduled for you, it will appear here with a link to join.
+                </p>
+              </Card>
 
-              {/* Booking Form Modal */}
-              {showBookingForm && (
-                <Card className="p-6 bg-slate-900 border-slate-800">
-                  <h3 className="text-xl font-semibold text-white mb-4">Book 1:1 Session</h3>
-                  
-                  {!selectedTeacher ? (
-                    <div>
-                      <p className="text-slate-400 mb-4">Select a teacher:</p>
-                      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {teachers.map((teacher) => (
-                          <Card 
-                            key={teacher.user_id} 
-                            className="p-4 bg-slate-800 border-slate-700 cursor-pointer hover:border-blue-500 transition-colors"
-                            onClick={() => handleSelectTeacher(teacher)}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-600 to-violet-600 flex items-center justify-center text-white font-bold">
-                                {teacher.name?.charAt(0)}
-                              </div>
-                              <div>
-                                <h4 className="font-semibold text-white">{teacher.name}</h4>
-                                <p className="text-sm text-slate-400">{teacher.email}</p>
-                              </div>
-                            </div>
-                          </Card>
-                        ))}
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setShowBookingForm(false)} 
-                        className="mt-4 border-slate-700 text-slate-300"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="flex items-center gap-3 mb-4 p-3 bg-slate-800 rounded-lg">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-violet-600 flex items-center justify-center text-white font-bold">
-                          {selectedTeacher.name?.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-white">{selectedTeacher.name}</p>
-                          <p className="text-sm text-slate-400">Selected Teacher</p>
-                        </div>
-                      </div>
-
-                      {teacherAvailability?.availability?.length > 0 && (
-                        <div className="mb-4 p-3 bg-slate-800 rounded-lg">
-                          <p className="text-sm text-slate-400 mb-2">Available on:</p>
-                          <div className="flex flex-wrap gap-2">
-                            {teacherAvailability.availability.map((slot, idx) => (
-                              <Badge key={idx} variant="secondary">
-                                {daysOfWeek[slot.day_of_week]} {slot.start_time}-{slot.end_time}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      <form onSubmit={handleBookSession} className="space-y-4">
-                        <div className="grid md:grid-cols-2 gap-4">
-                          <div>
-                            <Label className="text-slate-300">Date</Label>
-                            <Input
-                              type="date"
-                              value={bookingForm.date}
-                              onChange={(e) => setBookingForm({...bookingForm, date: e.target.value})}
-                              required
-                              min={new Date().toISOString().split('T')[0]}
-                              className="bg-slate-800 border-slate-700 text-white"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-slate-300">Subject</Label>
-                            <Input
-                              value={bookingForm.subject}
-                              onChange={(e) => setBookingForm({...bookingForm, subject: e.target.value})}
-                              placeholder="e.g., Mathematics Doubt"
-                              className="bg-slate-800 border-slate-700 text-white"
-                            />
-                          </div>
-                        </div>
-                        <div className="grid md:grid-cols-2 gap-4">
-                          <div>
-                            <Label className="text-slate-300">Start Time</Label>
-                            <Input
-                              type="time"
-                              value={bookingForm.start_time}
-                              onChange={(e) => setBookingForm({...bookingForm, start_time: e.target.value})}
-                              required
-                              className="bg-slate-800 border-slate-700 text-white"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-slate-300">End Time</Label>
-                            <Input
-                              type="time"
-                              value={bookingForm.end_time}
-                              onChange={(e) => setBookingForm({...bookingForm, end_time: e.target.value})}
-                              required
-                              className="bg-slate-800 border-slate-700 text-white"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <Label className="text-slate-300">Notes (optional)</Label>
-                          <Textarea
-                            value={bookingForm.notes}
-                            onChange={(e) => setBookingForm({...bookingForm, notes: e.target.value})}
-                            placeholder="Any specific topics you want to discuss..."
-                            className="bg-slate-800 border-slate-700 text-white"
-                            rows={3}
-                          />
-                        </div>
-                        <div className="flex gap-3">
-                          <Button type="submit" className="bg-green-600 hover:bg-green-700">
-                            Submit Booking
-                          </Button>
-                          <Button 
-                            type="button" 
-                            variant="outline" 
-                            onClick={() => { setSelectedTeacher(null); setShowBookingForm(false); }}
-                            className="border-slate-700 text-slate-300"
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </form>
-                    </div>
-                  )}
+              {mySessions.length === 0 ? (
+                <Card className="p-12 text-center bg-slate-900 border-slate-800">
+                  <CalendarDays className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                  <h3 className="text-xl font-medium text-slate-400 mb-2">No sessions scheduled</h3>
+                  <p className="text-slate-500">Your teacher will schedule 1:1 sessions for you</p>
                 </Card>
-              )}
-
-              {/* My Bookings */}
-              <div>
-                <h3 className="text-lg font-semibold text-slate-300 mb-4">My Bookings</h3>
-                {myBookings.length === 0 ? (
-                  <Card className="p-6 text-center bg-slate-900 border-slate-800">
-                    <CalendarDays className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                    <p className="text-slate-500">No bookings yet. Book your first 1:1 session!</p>
-                  </Card>
-                ) : (
-                  <div className="space-y-3">
-                    {myBookings.map((booking) => (
-                      <Card key={booking.slot_id} className="p-4 bg-slate-900 border-slate-800">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <h4 className="font-semibold text-white">{booking.teacher_name}</h4>
-                              <Badge className={
-                                booking.status === 'approved' ? 'bg-green-600' :
-                                booking.status === 'pending' ? 'bg-amber-600' :
-                                booking.status === 'rejected' ? 'bg-red-600' :
-                                'bg-slate-600'
-                              }>
-                                {booking.status}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-4 text-sm text-slate-400">
-                              <span>{booking.date}</span>
-                              <span>{booking.start_time} - {booking.end_time}</span>
-                              {booking.subject && <span>{booking.subject}</span>}
-                            </div>
+              ) : (
+                <div className="space-y-4">
+                  {mySessions.map((session) => (
+                    <Card key={session.slot_id} className="p-4 bg-slate-900 border-slate-800">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-lg font-semibold text-white">{session.subject || '1:1 Session'}</h3>
+                            <Badge className="bg-green-600">Scheduled</Badge>
                           </div>
-                          <div className="flex gap-2">
-                            {booking.status === 'approved' && booking.meeting_link && (
-                              <a href={booking.meeting_link} target="_blank" rel="noopener noreferrer">
-                                <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                                  Join
-                                </Button>
-                              </a>
-                            )}
-                            {(booking.status === 'pending' || booking.status === 'approved') && (
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => handleCancelBooking(booking.slot_id)}
-                                className="border-red-800 text-red-400 hover:bg-red-900/50"
-                              >
-                                Cancel
-                              </Button>
-                            )}
+                          <p className="text-sm text-slate-400">with {session.teacher_name || 'Teacher'}</p>
+                          <div className="flex items-center gap-4 mt-2 text-sm">
+                            <span className="text-blue-400">{session.date}</span>
+                            <span className="text-slate-400">{session.start_time} - {session.end_time}</span>
+                            <Badge variant="secondary" className={session.platform === 'zoom' ? 'bg-blue-600' : 'bg-green-600'}>
+                              {session.platform === 'zoom' ? 'Zoom' : 'Google Meet'}
+                            </Badge>
                           </div>
+                          {session.notes && (
+                            <p className="text-sm text-slate-500 mt-2">{session.notes}</p>
+                          )}
                         </div>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </div>
+                        {session.meeting_link && (
+                          <a href={session.meeting_link} target="_blank" rel="noopener noreferrer">
+                            <Button className="bg-green-600 hover:bg-green-700">
+                              <ExternalLink className="w-4 h-4 mr-2" />
+                              Join Session
+                            </Button>
+                          </a>
+                        )}
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </main>

@@ -58,6 +58,9 @@ class User(BaseModel):
     picture: Optional[str] = None
     role: str = UserRole.STUDENT
     parent_email: Optional[str] = None  # For linking parent to student
+    bio: Optional[str] = None  # Teacher bio
+    subjects: Optional[List[str]] = None  # Teacher subjects
+    class_range: Optional[str] = None  # Teacher class range (e.g., "6-10")
     created_at: datetime
 
 class UserCreate(BaseModel):
@@ -66,6 +69,9 @@ class UserCreate(BaseModel):
     name: str
     role: str = UserRole.STUDENT
     parent_email: Optional[str] = None
+    bio: Optional[str] = None
+    subjects: Optional[List[str]] = None
+    class_range: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -296,12 +302,16 @@ class BookingSlot(BaseModel):
     created_at: datetime
 
 class BookingSlotCreate(BaseModel):
-    teacher_id: str
-    date: str
-    start_time: str
-    end_time: str
+    date: str  # "2026-03-25"
+    start_time: str  # "10:00"
+    end_time: str  # "10:30"
     subject: Optional[str] = None
     notes: Optional[str] = None
+    student_id: Optional[str] = None
+    student_name: Optional[str] = None
+    student_email: Optional[str] = None
+    meeting_link: Optional[str] = None
+    platform: str = "zoom"  # "zoom" or "google_meet"
 
 class PaymentOrder(BaseModel):
     order_id: str
@@ -1493,35 +1503,42 @@ async def get_teacher_availability(teacher_id: str):
 @api_router.post("/bookings")
 async def create_booking(
     booking_data: BookingSlotCreate,
-    current_user: User = Depends(require_role([UserRole.STUDENT]))
+    current_user: User = Depends(require_role([UserRole.TEACHER, UserRole.ADMIN]))
 ):
-    """Student books a 1:1 session with teacher"""
+    """Teacher creates a 1:1 session slot for a student"""
     slot_id = f"slot_{uuid.uuid4().hex[:12]}"
     
     # Check if slot is already booked
     existing = await db.booking_slots.find_one({
-        "teacher_id": booking_data.teacher_id,
+        "teacher_id": current_user.user_id,
         "date": booking_data.date,
         "start_time": booking_data.start_time,
         "status": {"$in": ["pending", "approved"]}
     })
     
     if existing:
-        raise HTTPException(status_code=400, detail="This slot is already booked")
+        raise HTTPException(status_code=400, detail="This slot is already scheduled")
     
     booking_doc = {
         "slot_id": slot_id,
-        "student_id": current_user.user_id,
-        "student_name": current_user.name,
-        "student_email": current_user.email,
-        **booking_data.model_dump(),
-        "status": "pending",
-        "meeting_link": None,
+        "teacher_id": current_user.user_id,
+        "teacher_name": current_user.name,
+        "student_id": booking_data.student_id if hasattr(booking_data, 'student_id') else None,
+        "student_name": booking_data.student_name if hasattr(booking_data, 'student_name') else None,
+        "student_email": booking_data.student_email if hasattr(booking_data, 'student_email') else None,
+        "date": booking_data.date,
+        "start_time": booking_data.start_time,
+        "end_time": booking_data.end_time,
+        "subject": booking_data.subject,
+        "notes": booking_data.notes,
+        "meeting_link": booking_data.meeting_link if hasattr(booking_data, 'meeting_link') else None,
+        "platform": booking_data.platform if hasattr(booking_data, 'platform') else "zoom",
+        "status": "scheduled",
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
     await db.booking_slots.insert_one(booking_doc)
-    return {"message": "Booking request submitted", "slot_id": slot_id}
+    return {"message": "Session scheduled successfully", "slot_id": slot_id}
 
 @api_router.get("/bookings/my")
 async def get_my_bookings(current_user: User = Depends(get_current_user)):

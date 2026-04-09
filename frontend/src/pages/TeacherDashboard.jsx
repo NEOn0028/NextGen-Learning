@@ -6,13 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { 
   Video, Calendar, Users, BookOpen, LogOut, Menu, X, Plus, Trash2, 
   Edit, Eye, EyeOff, Clock, Check, XCircle, Settings, CalendarDays,
-  ChevronRight, GraduationCap
+  ChevronRight, GraduationCap, ExternalLink
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -22,8 +21,7 @@ const TeacherDashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [courses, setCourses] = useState([]);
-  const [bookings, setBookings] = useState([]);
-  const [availability, setAvailability] = useState([]);
+  const [sessions, setSessions] = useState([]);
   const [upcomingClasses, setUpcomingClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -36,19 +34,37 @@ const TeacherDashboard = () => {
     title: '',
     description: '',
     stream: 'general',
-    class_level: '9',
+    class_level: '6',
     subject: '',
     price: '',
     thumbnail: ''
   });
   
-  // Availability form states
-  const [showAddAvailability, setShowAddAvailability] = useState(false);
-  const [availabilityForm, setAvailabilityForm] = useState({
-    day_of_week: 0,
-    start_time: '09:00',
-    end_time: '17:00',
-    slot_duration: 30
+  // Live Class form states
+  const [showAddLiveClass, setShowAddLiveClass] = useState(false);
+  const [liveClassForm, setLiveClassForm] = useState({
+    title: '',
+    course_id: '',
+    date: '',
+    start_time: '10:00',
+    duration: 60,
+    platform: 'zoom',
+    meeting_link: '',
+    description: ''
+  });
+
+  // 1:1 Session form states
+  const [showAddSession, setShowAddSession] = useState(false);
+  const [sessionForm, setSessionForm] = useState({
+    date: '',
+    start_time: '10:00',
+    end_time: '11:00',
+    subject: '',
+    notes: '',
+    student_name: '',
+    student_email: '',
+    platform: 'zoom',
+    meeting_link: ''
   });
 
   const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -86,21 +102,23 @@ const TeacherDashboard = () => {
 
   const loadAllData = async (token, userId) => {
     try {
-      const [coursesRes, bookingsRes, availabilityRes] = await Promise.all([
+      const [coursesRes, sessionsRes] = await Promise.all([
         axios.get(`${API}/courses/teacher/${userId}`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API}/bookings/my`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API}/teacher/availability`, { headers: { Authorization: `Bearer ${token}` } })
+        axios.get(`${API}/bookings/my`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
       
       setCourses(coursesRes.data);
-      setBookings(bookingsRes.data);
-      setAvailability(availabilityRes.data);
+      setSessions(sessionsRes.data);
       
       // Get all upcoming live classes across all courses
       const allClasses = [];
       for (const course of coursesRes.data) {
-        const classesRes = await axios.get(`${API}/live-classes/course/${course.course_id}`);
-        allClasses.push(...classesRes.data.map(c => ({ ...c, course_title: course.title })));
+        try {
+          const classesRes = await axios.get(`${API}/live-classes/course/${course.course_id}`);
+          allClasses.push(...classesRes.data.map(c => ({ ...c, course_title: course.title })));
+        } catch (e) {
+          // Course might not have classes
+        }
       }
       setUpcomingClasses(allClasses.filter(c => new Date(c.scheduled_at) > new Date()).sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at)));
     } catch (error) {
@@ -200,7 +218,7 @@ const TeacherDashboard = () => {
       title: '',
       description: '',
       stream: 'general',
-      class_level: '9',
+      class_level: '6',
       subject: '',
       price: '',
       thumbnail: ''
@@ -209,71 +227,114 @@ const TeacherDashboard = () => {
     setEditingCourse(null);
   };
 
-  // Availability Management Functions
-  const handleAddAvailability = async (e) => {
+  // Live Class Functions
+  const handleCreateLiveClass = async (e) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
+      
+      const scheduledAt = `${liveClassForm.date}T${liveClassForm.start_time}:00`;
+      
       await axios.post(
-        `${API}/teacher/availability`,
-        availabilityForm,
+        `${API}/live-classes`,
+        {
+          course_id: liveClassForm.course_id,
+          title: liveClassForm.title,
+          scheduled_at: scheduledAt,
+          duration: parseInt(liveClassForm.duration),
+          platform: liveClassForm.platform,
+          meeting_link: liveClassForm.meeting_link,
+          description: liveClassForm.description
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success('Availability slot added!');
-      setShowAddAvailability(false);
-      setAvailabilityForm({ day_of_week: 0, start_time: '09:00', end_time: '17:00', slot_duration: 30 });
+      
+      toast.success('Live class scheduled successfully!');
+      setShowAddLiveClass(false);
+      setLiveClassForm({
+        title: '',
+        course_id: '',
+        date: '',
+        start_time: '10:00',
+        duration: 60,
+        platform: 'zoom',
+        meeting_link: '',
+        description: ''
+      });
       await loadAllData(token, user.user_id);
     } catch (error) {
-      toast.error('Failed to add availability');
+      toast.error(error.response?.data?.detail || 'Failed to schedule live class');
     }
   };
 
-  const handleDeleteAvailability = async (availabilityId) => {
+  const handleDeleteLiveClass = async (classId) => {
+    if (!window.confirm('Delete this live class?')) return;
+    
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`${API}/teacher/availability/${availabilityId}`, {
+      await axios.delete(`${API}/live-classes/${classId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success('Availability removed!');
+      toast.success('Live class deleted');
       await loadAllData(token, user.user_id);
     } catch (error) {
-      toast.error('Failed to remove availability');
+      toast.error('Failed to delete live class');
     }
   };
 
-  // Booking Management Functions
-  const handleApproveBooking = async (slotId) => {
-    const meetingLink = prompt('Enter meeting link (Zoom/Google Meet):');
-    if (!meetingLink) return;
-    
+  // 1:1 Session Functions
+  const handleCreateSession = async (e) => {
+    e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      await axios.patch(
-        `${API}/bookings/${slotId}/approve?meeting_link=${encodeURIComponent(meetingLink)}`,
-        {},
+      
+      await axios.post(
+        `${API}/bookings`,
+        {
+          date: sessionForm.date,
+          start_time: sessionForm.start_time,
+          end_time: sessionForm.end_time,
+          subject: sessionForm.subject,
+          notes: sessionForm.notes,
+          student_name: sessionForm.student_name,
+          student_email: sessionForm.student_email,
+          platform: sessionForm.platform,
+          meeting_link: sessionForm.meeting_link
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success('Booking approved!');
+      
+      toast.success('1:1 Session scheduled successfully!');
+      setShowAddSession(false);
+      setSessionForm({
+        date: '',
+        start_time: '10:00',
+        end_time: '11:00',
+        subject: '',
+        notes: '',
+        student_name: '',
+        student_email: '',
+        platform: 'zoom',
+        meeting_link: ''
+      });
       await loadAllData(token, user.user_id);
     } catch (error) {
-      toast.error('Failed to approve booking');
+      toast.error(error.response?.data?.detail || 'Failed to schedule session');
     }
   };
 
-  const handleRejectBooking = async (slotId) => {
-    if (!window.confirm('Are you sure you want to reject this booking?')) return;
+  const handleDeleteSession = async (slotId) => {
+    if (!window.confirm('Delete this session?')) return;
     
     try {
       const token = localStorage.getItem('token');
-      await axios.patch(
-        `${API}/bookings/${slotId}/reject`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      toast.success('Booking rejected');
+      await axios.patch(`${API}/bookings/${slotId}/cancel`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Session cancelled');
       await loadAllData(token, user.user_id);
     } catch (error) {
-      toast.error('Failed to reject booking');
+      toast.error('Failed to cancel session');
     }
   };
 
@@ -285,8 +346,7 @@ const TeacherDashboard = () => {
     );
   }
 
-  const pendingBookings = bookings.filter(b => b.status === 'pending');
-  const upcomingBookings = bookings.filter(b => b.status === 'approved' && new Date(b.date) >= new Date());
+  const upcomingSessions = sessions.filter(s => s.status === 'scheduled' && new Date(s.date) >= new Date());
 
   return (
     <div className="min-h-screen bg-slate-950">
@@ -307,6 +367,29 @@ const TeacherDashboard = () => {
           </button>
         </div>
         
+        {/* Teacher Profile */}
+        <div className="p-4 border-b border-slate-800">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-violet-600 to-blue-600 flex items-center justify-center text-white font-bold text-lg">
+              {user?.name?.charAt(0)}
+            </div>
+            <div>
+              <p className="text-white font-semibold">{user?.name}</p>
+              <p className="text-xs text-slate-400">Teacher</p>
+            </div>
+          </div>
+          {user?.bio && (
+            <p className="text-xs text-slate-500 mt-2">{user.bio}</p>
+          )}
+          {user?.subjects && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {user.subjects.map((subj, idx) => (
+                <Badge key={idx} variant="secondary" className="text-xs">{subj}</Badge>
+              ))}
+            </div>
+          )}
+        </div>
+        
         <nav className="p-4 space-y-2">
           <button 
             onClick={() => setActiveTab('courses')}
@@ -325,31 +408,19 @@ const TeacherDashboard = () => {
             <span>Live Classes</span>
           </button>
           <button 
-            onClick={() => setActiveTab('bookings')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${activeTab === 'bookings' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
-            data-testid="nav-bookings"
+            onClick={() => setActiveTab('sessions')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${activeTab === 'sessions' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+            data-testid="nav-sessions"
           >
             <CalendarDays className="w-5 h-5" />
-            <span>1:1 Bookings</span>
-            {pendingBookings.length > 0 && (
-              <Badge className="ml-auto bg-red-500 text-white">{pendingBookings.length}</Badge>
+            <span>1:1 Sessions</span>
+            {upcomingSessions.length > 0 && (
+              <Badge className="ml-auto bg-green-600 text-white">{upcomingSessions.length}</Badge>
             )}
-          </button>
-          <button 
-            onClick={() => setActiveTab('availability')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${activeTab === 'availability' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
-            data-testid="nav-availability"
-          >
-            <Settings className="w-5 h-5" />
-            <span>Availability</span>
           </button>
         </nav>
         
         <div className="absolute bottom-0 w-full p-4 border-t border-slate-800">
-          <div className="mb-4 px-4">
-            <p className="text-sm text-slate-400">Logged in as</p>
-            <p className="text-white font-medium truncate">{user?.name}</p>
-          </div>
           <Button onClick={handleLogout} variant="ghost" className="w-full justify-start text-slate-400 hover:text-white hover:bg-slate-800" data-testid="logout-btn">
             <LogOut className="w-5 h-5 mr-3" />
             Logout
@@ -381,7 +452,7 @@ const TeacherDashboard = () => {
             <Card className="p-4 bg-slate-900 border-slate-800">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-slate-400">Upcoming Classes</p>
+                  <p className="text-sm text-slate-400">Live Classes</p>
                   <p className="text-2xl font-bold text-white">{upcomingClasses.length}</p>
                 </div>
                 <Video className="w-8 h-8 text-violet-500" />
@@ -390,19 +461,19 @@ const TeacherDashboard = () => {
             <Card className="p-4 bg-slate-900 border-slate-800">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-slate-400">Pending Bookings</p>
-                  <p className="text-2xl font-bold text-white">{pendingBookings.length}</p>
+                  <p className="text-sm text-slate-400">1:1 Sessions</p>
+                  <p className="text-2xl font-bold text-white">{upcomingSessions.length}</p>
                 </div>
-                <Clock className="w-8 h-8 text-amber-500" />
+                <Users className="w-8 h-8 text-green-500" />
               </div>
             </Card>
             <Card className="p-4 bg-slate-900 border-slate-800">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-slate-400">Availability Slots</p>
-                  <p className="text-2xl font-bold text-white">{availability.length}</p>
+                  <p className="text-sm text-slate-400">Class Range</p>
+                  <p className="text-2xl font-bold text-white">{user?.class_range || '6-10'}</p>
                 </div>
-                <Calendar className="w-8 h-8 text-green-500" />
+                <GraduationCap className="w-8 h-8 text-amber-500" />
               </div>
             </Card>
           </div>
@@ -435,7 +506,7 @@ const TeacherDashboard = () => {
                         <Input
                           value={courseForm.title}
                           onChange={(e) => setCourseForm({...courseForm, title: e.target.value})}
-                          placeholder="e.g., Mathematics Class 10"
+                          placeholder="e.g., Commerce Class 10"
                           required
                           className="bg-slate-800 border-slate-700 text-white"
                           data-testid="course-title-input"
@@ -443,14 +514,23 @@ const TeacherDashboard = () => {
                       </div>
                       <div>
                         <Label className="text-slate-300">Subject *</Label>
-                        <Input
+                        <select
                           value={courseForm.subject}
                           onChange={(e) => setCourseForm({...courseForm, subject: e.target.value})}
-                          placeholder="e.g., Mathematics"
                           required
-                          className="bg-slate-800 border-slate-700 text-white"
+                          className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
                           data-testid="course-subject-input"
-                        />
+                        >
+                          <option value="">Select Subject</option>
+                          <option value="Commerce">Commerce</option>
+                          <option value="Humanities">Humanities</option>
+                          <option value="Economics">Economics</option>
+                          <option value="Business Studies">Business Studies</option>
+                          <option value="Accountancy">Accountancy</option>
+                          <option value="History">History</option>
+                          <option value="Geography">Geography</option>
+                          <option value="Political Science">Political Science</option>
+                        </select>
                       </div>
                     </div>
                     
@@ -463,7 +543,6 @@ const TeacherDashboard = () => {
                           className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
                           data-testid="course-stream-select"
                         >
-                          <option value="general">General (Class 9-10)</option>
                           <option value="commerce">Commerce</option>
                           <option value="humanities">Humanities</option>
                         </select>
@@ -476,10 +555,11 @@ const TeacherDashboard = () => {
                           className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
                           data-testid="course-class-select"
                         >
+                          <option value="6">Class 6</option>
+                          <option value="7">Class 7</option>
+                          <option value="8">Class 8</option>
                           <option value="9">Class 9</option>
                           <option value="10">Class 10</option>
-                          <option value="11">Class 11</option>
-                          <option value="12">Class 12</option>
                         </select>
                       </div>
                       <div>
@@ -602,13 +682,166 @@ const TeacherDashboard = () => {
           {/* Live Classes Tab */}
           {activeTab === 'classes' && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-white">Upcoming Live Classes</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-white">Live Classes</h2>
+                <Button 
+                  onClick={() => setShowAddLiveClass(true)}
+                  className="bg-violet-600 hover:bg-violet-700"
+                  data-testid="add-live-class-btn"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Schedule Live Class
+                </Button>
+              </div>
+
+              {/* Add Live Class Form */}
+              {showAddLiveClass && (
+                <Card className="p-6 bg-slate-900 border-slate-800">
+                  <h3 className="text-xl font-semibold text-white mb-4">Schedule Live Class</h3>
+                  <form onSubmit={handleCreateLiveClass} className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-slate-300">Class Title *</Label>
+                        <Input
+                          value={liveClassForm.title}
+                          onChange={(e) => setLiveClassForm({...liveClassForm, title: e.target.value})}
+                          placeholder="e.g., Chapter 5 - Balance Sheet"
+                          required
+                          className="bg-slate-800 border-slate-700 text-white"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-slate-300">Course *</Label>
+                        <select
+                          value={liveClassForm.course_id}
+                          onChange={(e) => setLiveClassForm({...liveClassForm, course_id: e.target.value})}
+                          required
+                          className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                        >
+                          <option value="">Select Course</option>
+                          {courses.map((course) => (
+                            <option key={course.course_id} value={course.course_id}>
+                              {course.title}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div>
+                        <Label className="text-slate-300">Date *</Label>
+                        <Input
+                          type="date"
+                          value={liveClassForm.date}
+                          onChange={(e) => setLiveClassForm({...liveClassForm, date: e.target.value})}
+                          required
+                          min={new Date().toISOString().split('T')[0]}
+                          className="bg-slate-800 border-slate-700 text-white"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-slate-300">Start Time *</Label>
+                        <Input
+                          type="time"
+                          value={liveClassForm.start_time}
+                          onChange={(e) => setLiveClassForm({...liveClassForm, start_time: e.target.value})}
+                          required
+                          className="bg-slate-800 border-slate-700 text-white"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-slate-300">Duration (mins)</Label>
+                        <select
+                          value={liveClassForm.duration}
+                          onChange={(e) => setLiveClassForm({...liveClassForm, duration: parseInt(e.target.value)})}
+                          className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                        >
+                          <option value={30}>30 minutes</option>
+                          <option value={45}>45 minutes</option>
+                          <option value={60}>60 minutes</option>
+                          <option value={90}>90 minutes</option>
+                          <option value={120}>120 minutes</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-slate-300">Platform *</Label>
+                        <div className="flex gap-4 mt-2">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="platform"
+                              value="zoom"
+                              checked={liveClassForm.platform === 'zoom'}
+                              onChange={(e) => setLiveClassForm({...liveClassForm, platform: e.target.value})}
+                              className="text-blue-600"
+                            />
+                            <span className="text-slate-300 flex items-center gap-1">
+                              <Video className="w-4 h-4 text-blue-400" />
+                              Zoom
+                            </span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="platform"
+                              value="google_meet"
+                              checked={liveClassForm.platform === 'google_meet'}
+                              onChange={(e) => setLiveClassForm({...liveClassForm, platform: e.target.value})}
+                              className="text-blue-600"
+                            />
+                            <span className="text-slate-300 flex items-center gap-1">
+                              <Video className="w-4 h-4 text-green-400" />
+                              Google Meet
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-slate-300">Meeting Link *</Label>
+                        <Input
+                          value={liveClassForm.meeting_link}
+                          onChange={(e) => setLiveClassForm({...liveClassForm, meeting_link: e.target.value})}
+                          placeholder={liveClassForm.platform === 'zoom' ? 'https://zoom.us/j/...' : 'https://meet.google.com/...'}
+                          required
+                          className="bg-slate-800 border-slate-700 text-white"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label className="text-slate-300">Description (optional)</Label>
+                      <Textarea
+                        value={liveClassForm.description}
+                        onChange={(e) => setLiveClassForm({...liveClassForm, description: e.target.value})}
+                        placeholder="Topics to be covered in this class..."
+                        rows={2}
+                        className="bg-slate-800 border-slate-700 text-white"
+                      />
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <Button type="submit" className="bg-violet-600 hover:bg-violet-700">
+                        <Calendar className="w-4 h-4 mr-2" />
+                        Schedule Class
+                      </Button>
+                      <Button type="button" variant="outline" onClick={() => setShowAddLiveClass(false)} className="border-slate-700 text-slate-300 hover:bg-slate-800">
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                </Card>
+              )}
               
+              {/* Live Classes List */}
               {upcomingClasses.length === 0 ? (
                 <Card className="p-12 text-center bg-slate-900 border-slate-800">
                   <Video className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                  <h3 className="text-xl font-medium text-slate-400 mb-2">No upcoming classes</h3>
-                  <p className="text-slate-500">Schedule live classes from your course management page</p>
+                  <h3 className="text-xl font-medium text-slate-400 mb-2">No live classes scheduled</h3>
+                  <p className="text-slate-500">Schedule your first live class for your students</p>
                 </Card>
               ) : (
                 <div className="space-y-4">
@@ -620,15 +853,27 @@ const TeacherDashboard = () => {
                           <p className="text-sm text-slate-400">{cls.course_title}</p>
                           <div className="flex items-center gap-4 mt-2 text-sm">
                             <span className="text-blue-400">{new Date(cls.scheduled_at).toLocaleString()}</span>
-                            <Badge variant="secondary">{cls.platform}</Badge>
+                            <Badge variant="secondary" className={cls.platform === 'zoom' ? 'bg-blue-600' : 'bg-green-600'}>
+                              {cls.platform === 'zoom' ? 'Zoom' : 'Google Meet'}
+                            </Badge>
                             <span className="text-slate-500">{cls.duration} mins</span>
                           </div>
                         </div>
-                        <a href={cls.meeting_link} target="_blank" rel="noopener noreferrer">
-                          <Button className="bg-green-600 hover:bg-green-700">
-                            Start Class
+                        <div className="flex gap-2">
+                          <a href={cls.meeting_link} target="_blank" rel="noopener noreferrer">
+                            <Button className="bg-green-600 hover:bg-green-700">
+                              <ExternalLink className="w-4 h-4 mr-2" />
+                              Start Class
+                            </Button>
+                          </a>
+                          <Button 
+                            variant="outline" 
+                            onClick={() => handleDeleteLiveClass(cls.class_id)}
+                            className="border-red-800 text-red-400 hover:bg-red-900/50"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </Button>
-                        </a>
+                        </div>
                       </div>
                     </Card>
                   ))}
@@ -637,166 +882,156 @@ const TeacherDashboard = () => {
             </div>
           )}
 
-          {/* Bookings Tab */}
-          {activeTab === 'bookings' && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-white">1:1 Session Bookings</h2>
-              
-              {/* Pending Bookings */}
-              <div>
-                <h3 className="text-lg font-semibold text-slate-300 mb-4">Pending Requests ({pendingBookings.length})</h3>
-                {pendingBookings.length === 0 ? (
-                  <Card className="p-6 text-center bg-slate-900 border-slate-800">
-                    <p className="text-slate-500">No pending booking requests</p>
-                  </Card>
-                ) : (
-                  <div className="space-y-3">
-                    {pendingBookings.map((booking) => (
-                      <Card key={booking.slot_id} className="p-4 bg-slate-900 border-slate-800">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-semibold text-white">{booking.student_name}</h4>
-                            <p className="text-sm text-slate-400">{booking.student_email}</p>
-                            <div className="flex items-center gap-4 mt-2 text-sm">
-                              <span className="text-blue-400">{booking.date}</span>
-                              <span className="text-slate-400">{booking.start_time} - {booking.end_time}</span>
-                              {booking.subject && <Badge variant="secondary">{booking.subject}</Badge>}
-                            </div>
-                            {booking.notes && <p className="text-sm text-slate-500 mt-2">"{booking.notes}"</p>}
-                          </div>
-                          <div className="flex gap-2">
-                            <Button 
-                              onClick={() => handleApproveBooking(booking.slot_id)}
-                              className="bg-green-600 hover:bg-green-700"
-                              size="sm"
-                            >
-                              <Check className="w-4 h-4 mr-1" />
-                              Approve
-                            </Button>
-                            <Button 
-                              onClick={() => handleRejectBooking(booking.slot_id)}
-                              variant="outline"
-                              className="border-red-800 text-red-400 hover:bg-red-900/50"
-                              size="sm"
-                            >
-                              <XCircle className="w-4 h-4 mr-1" />
-                              Reject
-                            </Button>
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Upcoming Approved Bookings */}
-              <div>
-                <h3 className="text-lg font-semibold text-slate-300 mb-4">Upcoming Sessions ({upcomingBookings.length})</h3>
-                {upcomingBookings.length === 0 ? (
-                  <Card className="p-6 text-center bg-slate-900 border-slate-800">
-                    <p className="text-slate-500">No upcoming sessions</p>
-                  </Card>
-                ) : (
-                  <div className="space-y-3">
-                    {upcomingBookings.map((booking) => (
-                      <Card key={booking.slot_id} className="p-4 bg-slate-900 border-slate-800">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-semibold text-white">{booking.student_name}</h4>
-                            <div className="flex items-center gap-4 mt-1 text-sm">
-                              <span className="text-blue-400">{booking.date}</span>
-                              <span className="text-slate-400">{booking.start_time} - {booking.end_time}</span>
-                              <Badge className="bg-green-600">Approved</Badge>
-                            </div>
-                          </div>
-                          {booking.meeting_link && (
-                            <a href={booking.meeting_link} target="_blank" rel="noopener noreferrer">
-                              <Button className="bg-blue-600 hover:bg-blue-700" size="sm">
-                                Join Meeting
-                              </Button>
-                            </a>
-                          )}
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Availability Tab */}
-          {activeTab === 'availability' && (
+          {/* 1:1 Sessions Tab */}
+          {activeTab === 'sessions' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-white">My Availability</h2>
+                <h2 className="text-2xl font-bold text-white">1:1 Sessions</h2>
                 <Button 
-                  onClick={() => setShowAddAvailability(true)}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  onClick={() => setShowAddSession(true)}
+                  className="bg-green-600 hover:bg-green-700"
+                  data-testid="add-session-btn"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Add Slot
+                  Schedule Session
                 </Button>
               </div>
 
-              {/* Add Availability Form */}
-              {showAddAvailability && (
+              {/* Add Session Form */}
+              {showAddSession && (
                 <Card className="p-6 bg-slate-900 border-slate-800">
-                  <h3 className="text-xl font-semibold text-white mb-4">Add Availability Slot</h3>
-                  <form onSubmit={handleAddAvailability} className="space-y-4">
+                  <h3 className="text-xl font-semibold text-white mb-4">Schedule 1:1 Session</h3>
+                  <form onSubmit={handleCreateSession} className="space-y-4">
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
-                        <Label className="text-slate-300">Day of Week</Label>
-                        <select
-                          value={availabilityForm.day_of_week}
-                          onChange={(e) => setAvailabilityForm({...availabilityForm, day_of_week: parseInt(e.target.value)})}
-                          className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                        >
-                          {daysOfWeek.map((day, idx) => (
-                            <option key={idx} value={idx}>{day}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <Label className="text-slate-300">Slot Duration (mins)</Label>
-                        <select
-                          value={availabilityForm.slot_duration}
-                          onChange={(e) => setAvailabilityForm({...availabilityForm, slot_duration: parseInt(e.target.value)})}
-                          className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                        >
-                          <option value={15}>15 minutes</option>
-                          <option value={30}>30 minutes</option>
-                          <option value={45}>45 minutes</option>
-                          <option value={60}>60 minutes</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-slate-300">Start Time</Label>
+                        <Label className="text-slate-300">Student Name</Label>
                         <Input
-                          type="time"
-                          value={availabilityForm.start_time}
-                          onChange={(e) => setAvailabilityForm({...availabilityForm, start_time: e.target.value})}
+                          value={sessionForm.student_name}
+                          onChange={(e) => setSessionForm({...sessionForm, student_name: e.target.value})}
+                          placeholder="Enter student name"
                           className="bg-slate-800 border-slate-700 text-white"
                         />
                       </div>
                       <div>
-                        <Label className="text-slate-300">End Time</Label>
+                        <Label className="text-slate-300">Student Email</Label>
                         <Input
-                          type="time"
-                          value={availabilityForm.end_time}
-                          onChange={(e) => setAvailabilityForm({...availabilityForm, end_time: e.target.value})}
+                          type="email"
+                          value={sessionForm.student_email}
+                          onChange={(e) => setSessionForm({...sessionForm, student_email: e.target.value})}
+                          placeholder="student@email.com"
                           className="bg-slate-800 border-slate-700 text-white"
                         />
                       </div>
                     </div>
+                    
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div>
+                        <Label className="text-slate-300">Date *</Label>
+                        <Input
+                          type="date"
+                          value={sessionForm.date}
+                          onChange={(e) => setSessionForm({...sessionForm, date: e.target.value})}
+                          required
+                          min={new Date().toISOString().split('T')[0]}
+                          className="bg-slate-800 border-slate-700 text-white"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-slate-300">Start Time *</Label>
+                        <Input
+                          type="time"
+                          value={sessionForm.start_time}
+                          onChange={(e) => setSessionForm({...sessionForm, start_time: e.target.value})}
+                          required
+                          className="bg-slate-800 border-slate-700 text-white"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-slate-300">End Time *</Label>
+                        <Input
+                          type="time"
+                          value={sessionForm.end_time}
+                          onChange={(e) => setSessionForm({...sessionForm, end_time: e.target.value})}
+                          required
+                          className="bg-slate-800 border-slate-700 text-white"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-slate-300">Platform *</Label>
+                        <div className="flex gap-4 mt-2">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="session_platform"
+                              value="zoom"
+                              checked={sessionForm.platform === 'zoom'}
+                              onChange={(e) => setSessionForm({...sessionForm, platform: e.target.value})}
+                              className="text-blue-600"
+                            />
+                            <span className="text-slate-300 flex items-center gap-1">
+                              <Video className="w-4 h-4 text-blue-400" />
+                              Zoom
+                            </span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="session_platform"
+                              value="google_meet"
+                              checked={sessionForm.platform === 'google_meet'}
+                              onChange={(e) => setSessionForm({...sessionForm, platform: e.target.value})}
+                              className="text-blue-600"
+                            />
+                            <span className="text-slate-300 flex items-center gap-1">
+                              <Video className="w-4 h-4 text-green-400" />
+                              Google Meet
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-slate-300">Meeting Link *</Label>
+                        <Input
+                          value={sessionForm.meeting_link}
+                          onChange={(e) => setSessionForm({...sessionForm, meeting_link: e.target.value})}
+                          placeholder={sessionForm.platform === 'zoom' ? 'https://zoom.us/j/...' : 'https://meet.google.com/...'}
+                          required
+                          className="bg-slate-800 border-slate-700 text-white"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label className="text-slate-300">Subject *</Label>
+                      <Input
+                        value={sessionForm.subject}
+                        onChange={(e) => setSessionForm({...sessionForm, subject: e.target.value})}
+                        placeholder="e.g., Commerce Doubt Clearing"
+                        required
+                        className="bg-slate-800 border-slate-700 text-white"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label className="text-slate-300">Notes (optional)</Label>
+                      <Textarea
+                        value={sessionForm.notes}
+                        onChange={(e) => setSessionForm({...sessionForm, notes: e.target.value})}
+                        placeholder="Any specific topics or notes..."
+                        rows={2}
+                        className="bg-slate-800 border-slate-700 text-white"
+                      />
+                    </div>
+                    
                     <div className="flex gap-3">
                       <Button type="submit" className="bg-green-600 hover:bg-green-700">
-                        Save Availability
+                        <CalendarDays className="w-4 h-4 mr-2" />
+                        Schedule Session
                       </Button>
-                      <Button type="button" variant="outline" onClick={() => setShowAddAvailability(false)} className="border-slate-700 text-slate-300 hover:bg-slate-800">
+                      <Button type="button" variant="outline" onClick={() => setShowAddSession(false)} className="border-slate-700 text-slate-300 hover:bg-slate-800">
                         Cancel
                       </Button>
                     </div>
@@ -804,31 +1039,59 @@ const TeacherDashboard = () => {
                 </Card>
               )}
 
-              {/* Availability List */}
-              {availability.length === 0 ? (
+              {/* Sessions List */}
+              {sessions.length === 0 ? (
                 <Card className="p-12 text-center bg-slate-900 border-slate-800">
-                  <Calendar className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                  <h3 className="text-xl font-medium text-slate-400 mb-2">No availability set</h3>
-                  <p className="text-slate-500">Add your available time slots for 1:1 sessions</p>
+                  <CalendarDays className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                  <h3 className="text-xl font-medium text-slate-400 mb-2">No sessions scheduled</h3>
+                  <p className="text-slate-500">Schedule 1:1 sessions with your students</p>
                 </Card>
               ) : (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {availability.map((slot) => (
-                    <Card key={slot.availability_id} className="p-4 bg-slate-900 border-slate-800">
-                      <div className="flex items-start justify-between">
+                <div className="space-y-4">
+                  {sessions.map((session) => (
+                    <Card key={session.slot_id} className="p-4 bg-slate-900 border-slate-800">
+                      <div className="flex items-center justify-between">
                         <div>
-                          <h3 className="font-semibold text-white">{daysOfWeek[slot.day_of_week]}</h3>
-                          <p className="text-sm text-blue-400 mt-1">{slot.start_time} - {slot.end_time}</p>
-                          <p className="text-xs text-slate-500 mt-1">{slot.slot_duration} min slots</p>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-lg font-semibold text-white">{session.subject || '1:1 Session'}</h3>
+                            <Badge className={
+                              session.status === 'scheduled' ? 'bg-green-600' :
+                              session.status === 'cancelled' ? 'bg-red-600' :
+                              'bg-slate-600'
+                            }>
+                              {session.status}
+                            </Badge>
+                          </div>
+                          {session.student_name && (
+                            <p className="text-sm text-slate-400">Student: {session.student_name}</p>
+                          )}
+                          <div className="flex items-center gap-4 mt-2 text-sm">
+                            <span className="text-blue-400">{session.date}</span>
+                            <span className="text-slate-400">{session.start_time} - {session.end_time}</span>
+                            <Badge variant="secondary" className={session.platform === 'zoom' ? 'bg-blue-600' : 'bg-green-600'}>
+                              {session.platform === 'zoom' ? 'Zoom' : 'Google Meet'}
+                            </Badge>
+                          </div>
                         </div>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => handleDeleteAvailability(slot.availability_id)}
-                          className="text-red-400 hover:text-red-300 hover:bg-red-900/30"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <div className="flex gap-2">
+                          {session.meeting_link && session.status === 'scheduled' && (
+                            <a href={session.meeting_link} target="_blank" rel="noopener noreferrer">
+                              <Button className="bg-green-600 hover:bg-green-700">
+                                <ExternalLink className="w-4 h-4 mr-2" />
+                                Join
+                              </Button>
+                            </a>
+                          )}
+                          {session.status === 'scheduled' && (
+                            <Button 
+                              variant="outline" 
+                              onClick={() => handleDeleteSession(session.slot_id)}
+                              className="border-red-800 text-red-400 hover:bg-red-900/50"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </Card>
                   ))}
