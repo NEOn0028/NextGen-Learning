@@ -17,9 +17,14 @@ const Landing = () => {
   }, []);
   
   const teachers = [
-    { name: 'Priya Sharma', qualification: 'M.Sc Mathematics, IIT Delhi', experience: '8 years', subject: 'Mathematics', rating: 5 },
-    { name: 'Rajesh Kumar', qualification: 'MBA, CA Finalist', experience: '6 years', subject: 'Commerce', rating: 5 },
-    { name: 'Anjali Verma', qualification: 'M.A Political Science, DU', experience: '7 years', subject: 'Humanities', rating: 5 }
+    { 
+      name: 'Ruchi Kejriwal', 
+      qualification: 'Graduate from Delhi University', 
+      experience: '5+ years', 
+      subject: 'Commerce & Humanities', 
+      rating: 5,
+      bio: 'Expert in Commerce and Humanities subjects for Class 6-10 students'
+    }
   ];
   
   const results = [
@@ -109,7 +114,7 @@ const Landing = () => {
                 </span>
               </h1>
               <p className="text-xl text-slate-300 mb-8">
-                1-on-1 mentorship for Classes 9–12 with real results
+                1-on-1 mentorship for Classes 6–10 with real results
               </p>
               
               <div className="grid grid-cols-2 gap-4 mb-8">
@@ -214,9 +219,9 @@ const Landing = () => {
           
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {[
-              { title: 'Class 9-12 (General)', price: '₹6,999', popular: false },
-              { title: 'Class 11-12 Humanities', price: '₹7,999', popular: true },
-              { title: 'Class 11-12 Commerce', price: '₹9,999', popular: false }
+              { title: 'Class 6-8 (Foundation)', price: '₹5,999', popular: false },
+              { title: 'Class 9-10 (Board Prep)', price: '₹6,999', popular: true },
+              { title: 'Commerce & Humanities', price: '₹7,999', popular: false }
             ].map((plan, idx) => (
               <Card key={idx} className={`p-8 ${plan.popular ? 'bg-gradient-to-br from-blue-900/50 to-violet-900/50 border-blue-500/50 ring-2 ring-blue-500/30' : 'bg-slate-800/50 border-slate-700'} relative overflow-hidden hover-lift`}>
                 {plan.popular && (
@@ -264,25 +269,31 @@ const Landing = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold heading-font text-white mb-4">
-              Learn from India's Best Teachers
+              Meet Your Teacher
             </h2>
-            <p className="text-xl text-slate-400">Expert educators with proven track records</p>
+            <p className="text-xl text-slate-400">Expert educator with proven track record</p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="max-w-md mx-auto">
             {teachers.map((teacher, idx) => (
-              <Card key={idx} className="p-6 bg-slate-800/50 border-slate-700 hover-lift text-center">
-                <div className="w-24 h-24 rounded-full bg-gradient-to-r from-blue-600 to-violet-600 flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4">
+              <Card key={idx} className="p-8 bg-gradient-to-br from-blue-900/50 to-violet-900/50 border-blue-500/50 hover-lift text-center">
+                <div className="w-32 h-32 rounded-full bg-gradient-to-r from-blue-600 to-violet-600 flex items-center justify-center text-white text-5xl font-bold mx-auto mb-6">
                   {teacher.name.charAt(0)}
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">{teacher.name}</h3>
-                <p className="text-blue-400 mb-2">{teacher.subject}</p>
-                <p className="text-sm text-slate-400 mb-1">{teacher.qualification}</p>
-                <p className="text-sm text-slate-500 mb-3">{teacher.experience} experience</p>
-                <div className="flex items-center justify-center gap-1">
+                <h3 className="text-2xl font-bold text-white mb-2">{teacher.name}</h3>
+                <p className="text-blue-400 text-lg mb-3">{teacher.subject}</p>
+                <p className="text-slate-300 mb-2">{teacher.qualification}</p>
+                <p className="text-slate-400 mb-2">{teacher.experience} experience</p>
+                <p className="text-sm text-slate-400 mb-4">{teacher.bio}</p>
+                <div className="flex items-center justify-center gap-1 mb-4">
                   {[...Array(teacher.rating)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                    <Star key={i} className="w-5 h-5 text-yellow-400 fill-yellow-400" />
                   ))}
+                </div>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  <Badge className="bg-violet-600">Commerce</Badge>
+                  <Badge className="bg-blue-600">Humanities</Badge>
+                  <Badge className="bg-green-600">Class 6-10</Badge>
                 </div>
               </Card>
             ))}
