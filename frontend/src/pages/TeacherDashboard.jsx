@@ -11,7 +11,7 @@ import axios from 'axios';
 import { 
   Video, Calendar, Users, BookOpen, LogOut, Menu, X, Plus, Trash2, 
   Edit, Eye, EyeOff, Clock, Settings, CalendarDays, ExternalLink, 
-  GraduationCap, UserCheck, Mail
+  GraduationCap, UserCheck, Mail, Phone, Lock, User
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -27,6 +27,17 @@ const TeacherDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('students');
   
+  // Profile form states
+  const [profileForm, setProfileForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    bio: '',
+    current_password: '',
+    new_password: '',
+    confirm_password: ''
+  });
+  
   // Course form states
   const [showAddCourse, setShowAddCourse] = useState(false);
   const [editingCourse, setEditingCourse] = useState(null);
@@ -34,7 +45,7 @@ const TeacherDashboard = () => {
     title: '',
     description: '',
     stream: 'commerce',
-    class_level: '6',
+    class_level: '9',
     subject: '',
     price: '',
     thumbnail: ''
@@ -90,6 +101,16 @@ const TeacherDashboard = () => {
       }
       
       setUser(response.data);
+      // Initialize profile form with user data
+      setProfileForm({
+        name: response.data.name || '',
+        email: response.data.email || '',
+        phone: response.data.phone || '',
+        bio: response.data.bio || '',
+        current_password: '',
+        new_password: '',
+        confirm_password: ''
+      });
       await loadAllData(token, response.data.user_id);
     } catch (error) {
       navigate('/login');
@@ -341,6 +362,48 @@ const TeacherDashboard = () => {
     }
   };
 
+  // Profile Update Function
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    
+    if (profileForm.new_password && profileForm.new_password !== profileForm.confirm_password) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      const updateData = {
+        name: profileForm.name,
+        email: profileForm.email,
+        phone: profileForm.phone,
+        bio: profileForm.bio
+      };
+      
+      if (profileForm.new_password) {
+        updateData.current_password = profileForm.current_password;
+        updateData.new_password = profileForm.new_password;
+      }
+      
+      const response = await axios.put(
+        `${API}/auth/profile`,
+        updateData,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setUser(response.data.user);
+      setProfileForm({
+        ...profileForm,
+        current_password: '',
+        new_password: '',
+        confirm_password: ''
+      });
+      toast.success('Profile updated successfully!');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to update profile');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -422,6 +485,14 @@ const TeacherDashboard = () => {
           >
             <CalendarDays className="w-5 h-5" />
             <span>1:1 Sessions</span>
+          </button>
+          <button 
+            onClick={() => setActiveTab('settings')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${activeTab === 'settings' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+            data-testid="nav-settings"
+          >
+            <Settings className="w-5 h-5" />
+            <span>Profile Settings</span>
           </button>
         </nav>
         
@@ -1092,6 +1163,119 @@ const TeacherDashboard = () => {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Profile Settings Tab */}
+          {activeTab === 'settings' && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-white">Profile Settings</h2>
+              
+              <Card className="p-6 bg-slate-900 border-slate-800">
+                <form onSubmit={handleUpdateProfile} className="space-y-6">
+                  {/* Personal Info */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                      <User className="w-5 h-5 text-blue-400" />
+                      Personal Information
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-slate-300">Full Name</Label>
+                        <Input
+                          value={profileForm.name}
+                          onChange={(e) => setProfileForm({...profileForm, name: e.target.value})}
+                          placeholder="Your full name"
+                          className="bg-slate-800 border-slate-700 text-white"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-slate-300">Bio</Label>
+                        <Input
+                          value={profileForm.bio}
+                          onChange={(e) => setProfileForm({...profileForm, bio: e.target.value})}
+                          placeholder="Short bio about yourself"
+                          className="bg-slate-800 border-slate-700 text-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Contact Info */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                      <Mail className="w-5 h-5 text-green-400" />
+                      Contact Information
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-slate-300">Email Address</Label>
+                        <Input
+                          type="email"
+                          value={profileForm.email}
+                          onChange={(e) => setProfileForm({...profileForm, email: e.target.value})}
+                          placeholder="your@email.com"
+                          className="bg-slate-800 border-slate-700 text-white"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-slate-300">Phone Number</Label>
+                        <Input
+                          value={profileForm.phone}
+                          onChange={(e) => setProfileForm({...profileForm, phone: e.target.value})}
+                          placeholder="+91 XXXXX XXXXX"
+                          className="bg-slate-800 border-slate-700 text-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Change Password */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                      <Lock className="w-5 h-5 text-amber-400" />
+                      Change Password
+                    </h3>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div>
+                        <Label className="text-slate-300">Current Password</Label>
+                        <Input
+                          type="password"
+                          value={profileForm.current_password}
+                          onChange={(e) => setProfileForm({...profileForm, current_password: e.target.value})}
+                          placeholder="••••••••"
+                          className="bg-slate-800 border-slate-700 text-white"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-slate-300">New Password</Label>
+                        <Input
+                          type="password"
+                          value={profileForm.new_password}
+                          onChange={(e) => setProfileForm({...profileForm, new_password: e.target.value})}
+                          placeholder="••••••••"
+                          className="bg-slate-800 border-slate-700 text-white"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-slate-300">Confirm New Password</Label>
+                        <Input
+                          type="password"
+                          value={profileForm.confirm_password}
+                          onChange={(e) => setProfileForm({...profileForm, confirm_password: e.target.value})}
+                          placeholder="••••••••"
+                          className="bg-slate-800 border-slate-700 text-white"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-2">Leave password fields empty if you don't want to change it</p>
+                  </div>
+                  
+                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                    Save Changes
+                  </Button>
+                </form>
+              </Card>
             </div>
           )}
         </main>

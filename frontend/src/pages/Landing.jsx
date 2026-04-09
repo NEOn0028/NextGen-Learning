@@ -21,9 +21,9 @@ const Landing = () => {
       name: 'Ruchi Kejriwal', 
       qualification: 'Graduate from Delhi University', 
       experience: '5+ years', 
-      subject: 'Commerce & Humanities', 
+      subject: 'All Subjects (Class 9-12)', 
       rating: 5,
-      bio: 'Expert in Commerce and Humanities subjects for Class 6-10 students'
+      bio: 'Expert in all subjects for Class 9-12. Specializes in Commerce & Humanities for senior classes.'
     }
   ];
   
@@ -114,7 +114,7 @@ const Landing = () => {
                 </span>
               </h1>
               <p className="text-xl text-slate-300 mb-8">
-                1-on-1 mentorship for Classes 6–10 with real results
+                1-on-1 mentorship for Classes 9–12 with real results
               </p>
               
               <div className="grid grid-cols-2 gap-4 mb-8">
@@ -219,10 +219,10 @@ const Landing = () => {
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {[
-              { title: 'Test Course', price: '₹1', popular: false, desc: 'Test the platform' },
-              { title: 'Class 6-8 (Foundation)', price: '₹5,999', popular: false, desc: 'Build strong basics' },
-              { title: 'Humanities (Class 6-10)', price: '₹7,999', popular: true, desc: 'History, Geography, Political Science' },
-              { title: 'Commerce (Class 6-10)', price: '₹9,999', popular: false, desc: 'Accountancy, Business Studies, Economics' }
+              { title: 'Class 9-10 Foundation', price: '₹5,999', popular: true, desc: 'All subjects - Math, Science, English, SST, Hindi' },
+              { title: 'Class 9-10 Premium', price: '₹7,999', popular: true, desc: 'All subjects + Extra practice & doubt sessions' },
+              { title: 'Commerce (11-12)', price: '₹9,999', popular: true, desc: 'Accountancy, Business Studies, Economics' },
+              { title: 'Humanities (11-12)', price: '₹7,999', popular: true, desc: 'History, Geography, Pol. Science, Sociology' }
             ].map((plan, idx) => (
               <Card key={idx} className={`p-6 ${plan.popular ? 'bg-gradient-to-br from-blue-900/50 to-violet-900/50 border-blue-500/50 ring-2 ring-blue-500/30' : 'bg-slate-800/50 border-slate-700'} relative overflow-hidden hover-lift`}>
                 {plan.popular && (
@@ -292,9 +292,9 @@ const Landing = () => {
                   ))}
                 </div>
                 <div className="flex flex-wrap gap-2 justify-center">
-                  <Badge className="bg-violet-600">Commerce</Badge>
-                  <Badge className="bg-blue-600">Humanities</Badge>
-                  <Badge className="bg-green-600">Class 6-10</Badge>
+                  <Badge className="bg-blue-600">Class 9-10</Badge>
+                  <Badge className="bg-violet-600">Commerce 11-12</Badge>
+                  <Badge className="bg-green-600">Humanities 11-12</Badge>
                 </div>
               </Card>
             ))}

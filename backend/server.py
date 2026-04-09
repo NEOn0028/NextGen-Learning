@@ -61,6 +61,7 @@ class User(BaseModel):
     bio: Optional[str] = None  # Teacher bio
     subjects: Optional[List[str]] = None  # Teacher subjects
     class_range: Optional[str] = None  # Teacher class range (e.g., "6-10")
+    phone: Optional[str] = None  # Phone number
     created_at: datetime
 
 class UserCreate(BaseModel):
@@ -72,6 +73,15 @@ class UserCreate(BaseModel):
     bio: Optional[str] = None
     subjects: Optional[List[str]] = None
     class_range: Optional[str] = None
+    phone: Optional[str] = None
+
+class UserProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    bio: Optional[str] = None
+    current_password: Optional[str] = None
+    new_password: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -558,6 +568,57 @@ async def logout(current_user: User = Depends(get_current_user), request: Reques
         response.delete_cookie(key="session_token", path="/")
     
     return {"message": "Logged out successfully"}
+
+@api_router.put("/auth/profile")
+async def update_profile(
+    profile_data: UserProfileUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Update user profile - name, email, phone, password"""
+    update_fields = {}
+    
+    # Update name if provided
+    if profile_data.name:
+        update_fields['name'] = profile_data.name
+    
+    # Update email if provided
+    if profile_data.email and profile_data.email != current_user.email:
+        # Check if email is already taken
+        existing = await db.users.find_one({"email": profile_data.email})
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already in use")
+        update_fields['email'] = profile_data.email
+    
+    # Update phone if provided
+    if profile_data.phone is not None:
+        update_fields['phone'] = profile_data.phone
+    
+    # Update bio if provided (for teachers)
+    if profile_data.bio is not None:
+        update_fields['bio'] = profile_data.bio
+    
+    # Update password if provided
+    if profile_data.new_password:
+        if not profile_data.current_password:
+            raise HTTPException(status_code=400, detail="Current password required to change password")
+        
+        # Verify current password
+        user_doc = await db.users.find_one({"user_id": current_user.user_id})
+        if not user_doc or not verify_password(profile_data.current_password, user_doc.get('password_hash', '')):
+            raise HTTPException(status_code=400, detail="Current password is incorrect")
+        
+        update_fields['password_hash'] = hash_password(profile_data.new_password)
+    
+    if update_fields:
+        await db.users.update_one(
+            {"user_id": current_user.user_id},
+            {"$set": update_fields}
+        )
+    
+    # Get updated user
+    updated_user = await db.users.find_one({"user_id": current_user.user_id}, {"_id": 0, "password_hash": 0})
+    
+    return {"message": "Profile updated successfully", "user": updated_user}
 
 # ============ COURSE ENDPOINTS ============
 
