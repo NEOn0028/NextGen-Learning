@@ -14,10 +14,11 @@ NextGen Learning is a modern online education platform for students in Classes 6
 **Total Courses:** 39
 
 ## Teacher
-- **Ruchi Kejriwal** - Graduated from Delhi University with expertise in Commerce and Humanities
+- **Ruchi Kejriwal** - Post graduate from Jamia Millia Islamia, a prestigious public research university in Delhi
 - **Email**: ruchi.kejriwal@nextgenlearning.com
 - **Password**: ruchi123
 - **Class Range**: 6-12
+- **Bio**: Expert in all subjects for Class 6-12. Specializes in Commerce & Humanities for senior classes.
 
 ## Core Features
 

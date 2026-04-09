@@ -19,11 +19,11 @@ const Landing = () => {
   const teachers = [
     { 
       name: 'Ruchi Kejriwal', 
-      qualification: 'Graduate from Delhi University', 
+      qualification: 'Post Graduate from Jamia Millia Islamia, Delhi', 
       experience: '5+ years', 
-      subject: 'All Subjects (Class 9-12)', 
+      subject: 'All Subjects (Class 6-12)', 
       rating: 5,
-      bio: 'Expert in all subjects for Class 9-12. Specializes in Commerce & Humanities for senior classes.'
+      bio: 'Post graduate from Jamia Millia Islamia, a prestigious public research university in Delhi. Expert in all subjects for Class 6-12. Specializes in Commerce & Humanities for senior classes.'
     }
   ];
   
@@ -292,6 +292,7 @@ const Landing = () => {
                   ))}
                 </div>
                 <div className="flex flex-wrap gap-2 justify-center">
+                  <Badge className="bg-blue-600">Class 6-8</Badge>
                   <Badge className="bg-blue-600">Class 9-10</Badge>
                   <Badge className="bg-violet-600">Commerce 11-12</Badge>
                   <Badge className="bg-green-600">Humanities 11-12</Badge>
