@@ -214,15 +214,15 @@ const Landing = () => {
             <h2 className="text-4xl md:text-5xl font-bold heading-font text-white mb-4">
               Choose Your Plan
             </h2>
-            <p className="text-xl text-slate-400">Premium 1-on-1 mentorship starting from ₹6,999/month</p>
+            <p className="text-xl text-slate-400">Premium 1-on-1 mentorship starting from ₹3,999/month</p>
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {[
-              { title: 'Class 9-10 Foundation', price: '₹5,999', popular: true, desc: 'All subjects - Math, Science, English, SST, Hindi' },
-              { title: 'Class 9-10 Premium', price: '₹7,999', popular: true, desc: 'All subjects + Extra practice & doubt sessions' },
-              { title: 'Commerce (11-12)', price: '₹9,999', popular: true, desc: 'Accountancy, Business Studies, Economics' },
-              { title: 'Humanities (11-12)', price: '₹7,999', popular: true, desc: 'History, Geography, Pol. Science, Sociology' }
+              { title: 'Class 6-8', price: '₹3,999', popular: true, desc: 'All subjects - Math, Science, English, SST, Hindi' },
+              { title: 'Class 9-10', price: '₹5,999', popular: true, desc: 'All subjects - Math, Science, English, SST, Hindi' },
+              { title: 'Humanities (11-12)', price: '₹7,999', popular: true, desc: 'History, Geography, Pol. Science, Sociology' },
+              { title: 'Commerce (11-12)', price: '₹8,999', popular: true, desc: 'Accountancy, Business Studies, Economics' }
             ].map((plan, idx) => (
               <Card key={idx} className={`p-6 ${plan.popular ? 'bg-gradient-to-br from-blue-900/50 to-violet-900/50 border-blue-500/50 ring-2 ring-blue-500/30' : 'bg-slate-800/50 border-slate-700'} relative overflow-hidden hover-lift`}>
                 {plan.popular && (
@@ -479,12 +479,13 @@ const Landing = () => {
                 />
                 <span className="font-bold text-white">NextGen Learning</span>
               </div>
-              <p className="text-slate-400 text-sm">Premium 1-on-1 mentorship for Classes 9-12</p>
+              <p className="text-slate-400 text-sm">Premium 1-on-1 mentorship for Classes 6-12</p>
             </div>
             <div>
               <h4 className="font-semibold text-white mb-4">Courses</h4>
               <ul className="space-y-2 text-sm text-slate-400">
-                <li><a href="#" className="hover:text-white transition-colors">Class 9-12 General</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Class 6-8</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Class 9-10</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Class 11-12 Commerce</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Class 11-12 Humanities</a></li>
               </ul>

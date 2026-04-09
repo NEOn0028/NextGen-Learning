@@ -37,7 +37,7 @@ const AdminDashboard = () => {
     title: '',
     description: '',
     stream: 'general',
-    class_level: '9',
+    class_level: '6',
     subject: '',
     price: '',
     teacher_id: ''
@@ -222,7 +222,7 @@ const AdminDashboard = () => {
         toast.success('Course created!');
       }
       setShowAddCourse(false);
-      setCourseForm({ title: '', description: '', stream: 'general', class_level: '9', subject: '', price: '', teacher_id: '' });
+      setCourseForm({ title: '', description: '', stream: 'general', class_level: '6', subject: '', price: '', teacher_id: '' });
       await loadAllData(token);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to save course');
@@ -734,7 +734,7 @@ const AdminDashboard = () => {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-white">Course Management</h2>
-                <Button onClick={() => { setCourseForm({ title: '', description: '', stream: 'general', class_level: '9', subject: '', price: '', teacher_id: '' }); setEditingCourse(null); setShowAddCourse(true); }} className="bg-blue-600 hover:bg-blue-700">
+                <Button onClick={() => { setCourseForm({ title: '', description: '', stream: 'general', class_level: '6', subject: '', price: '', teacher_id: '' }); setEditingCourse(null); setShowAddCourse(true); }} className="bg-blue-600 hover:bg-blue-700">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Course
                 </Button>
@@ -785,7 +785,7 @@ const AdminDashboard = () => {
                           onChange={(e) => setCourseForm({...courseForm, class_level: e.target.value})}
                           className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
                         >
-                          {[9, 10, 11, 12].map(c => <option key={c} value={c}>Class {c}</option>)}
+                          {[6, 7, 8, 9, 10, 11, 12].map(c => <option key={c} value={c}>Class {c}</option>)}
                         </select>
                       </div>
                       <div>

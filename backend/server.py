@@ -1395,6 +1395,38 @@ async def get_all_users(current_user: User = Depends(require_role([UserRole.ADMI
     users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
     return users
 
+@api_router.delete("/admin/users/{user_id}")
+async def delete_user(
+    user_id: str,
+    current_user: User = Depends(require_role([UserRole.ADMIN]))
+):
+    """Admin can delete any user (except themselves)"""
+    if user_id == current_user.user_id:
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+    
+    # Check if user exists
+    user = await db.users.find_one({"user_id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Delete all associated data
+    await db.enrollments.delete_many({"student_id": user_id})
+    await db.booking_slots.delete_many({"$or": [{"student_id": user_id}, {"teacher_id": user_id}]})
+    await db.doubts.delete_many({"student_id": user_id})
+    await db.submissions.delete_many({"student_id": user_id})
+    await db.test_attempts.delete_many({"student_id": user_id})
+    await db.user_sessions.delete_many({"user_id": user_id})
+    
+    # If teacher, delete their courses and classes
+    if user.get('role') == 'teacher':
+        await db.courses.delete_many({"teacher_id": user_id})
+        await db.live_classes.delete_many({"teacher_id": user_id})
+    
+    # Delete the user
+    await db.users.delete_one({"user_id": user_id})
+    
+    return {"message": "User and associated data deleted successfully"}
+
 @api_router.put("/admin/users/{user_id}/role")
 async def update_user_role(
     user_id: str,
