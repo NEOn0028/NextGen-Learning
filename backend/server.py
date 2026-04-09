@@ -618,6 +618,53 @@ async def get_teacher_courses(teacher_id: str):
             course['created_at'] = datetime.fromisoformat(course['created_at'])
     return courses
 
+@api_router.get("/teacher/stats")
+async def get_teacher_stats(current_user: User = Depends(require_role([UserRole.TEACHER, UserRole.ADMIN]))):
+    """Get teacher's courses with enrolled students count"""
+    courses = await db.courses.find({"teacher_id": current_user.user_id}, {"_id": 0}).to_list(1000)
+    
+    courses_with_stats = []
+    total_students = 0
+    
+    for course in courses:
+        # Get enrolled students count for this course
+        enrolled_count = await db.enrollments.count_documents({
+            "course_id": course['course_id'],
+            "payment_status": "completed"
+        })
+        
+        # Get enrolled students details
+        enrollments = await db.enrollments.find({
+            "course_id": course['course_id'],
+            "payment_status": "completed"
+        }, {"_id": 0}).to_list(100)
+        
+        students = []
+        for enrollment in enrollments:
+            student = await db.users.find_one({"user_id": enrollment['student_id']}, {"_id": 0, "password_hash": 0})
+            if student:
+                students.append({
+                    "user_id": student['user_id'],
+                    "name": student['name'],
+                    "email": student['email'],
+                    "enrolled_at": enrollment.get('created_at')
+                })
+        
+        total_students += enrolled_count
+        
+        course_data = {
+            **course,
+            "enrolled_count": enrolled_count,
+            "students": students
+        }
+        courses_with_stats.append(course_data)
+    
+    return {
+        "courses": courses_with_stats,
+        "total_students": total_students,
+        "total_courses": len(courses)
+    }
+
 @api_router.delete("/courses/{course_id}")
 async def delete_course(
     course_id: str,

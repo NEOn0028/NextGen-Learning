@@ -52,19 +52,38 @@ const StudentDashboard = () => {
 
   const loadAllData = async (token) => {
     try {
-      const [enrolledRes, upcomingRes, teachersRes] = await Promise.all([
+      const [enrolledRes, teachersRes] = await Promise.all([
         axios.get(`${API}/student/enrolled-courses`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API}/student/upcoming-classes`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] })),
         axios.get(`${API}/teachers`)
       ]);
       
       setEnrolledCourses(enrolledRes.data);
-      setUpcomingClasses(upcomingRes.data);
       
       // Set teacher info (we only have one teacher now)
       if (teachersRes.data.length > 0) {
         setTeacher(teachersRes.data[0]);
       }
+      
+      // Get upcoming classes ONLY for enrolled courses
+      const enrolledCourseIds = enrolledRes.data.map(e => e.course.course_id);
+      let allUpcomingClasses = [];
+      
+      for (const item of enrolledRes.data) {
+        if (item.live_classes) {
+          const upcoming = item.live_classes
+            .filter(cls => new Date(cls.scheduled_at) > new Date())
+            .map(cls => ({
+              ...cls,
+              course_title: item.course.title,
+              course_id: item.course.course_id
+            }));
+          allUpcomingClasses.push(...upcoming);
+        }
+      }
+      
+      // Sort by date
+      allUpcomingClasses.sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
+      setUpcomingClasses(allUpcomingClasses);
       
       // Get scheduled sessions for this student
       try {

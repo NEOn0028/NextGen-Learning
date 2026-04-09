@@ -10,8 +10,8 @@ import { toast } from 'sonner';
 import axios from 'axios';
 import { 
   Video, Calendar, Users, BookOpen, LogOut, Menu, X, Plus, Trash2, 
-  Edit, Eye, EyeOff, Clock, Check, XCircle, Settings, CalendarDays,
-  ChevronRight, GraduationCap, ExternalLink
+  Edit, Eye, EyeOff, Clock, Settings, CalendarDays, ExternalLink, 
+  GraduationCap, UserCheck, Mail
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -20,12 +20,12 @@ const API = `${BACKEND_URL}/api`;
 const TeacherDashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [courses, setCourses] = useState([]);
+  const [teacherStats, setTeacherStats] = useState({ courses: [], total_students: 0, total_courses: 0 });
   const [sessions, setSessions] = useState([]);
   const [upcomingClasses, setUpcomingClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('courses');
+  const [activeTab, setActiveTab] = useState('students');
   
   // Course form states
   const [showAddCourse, setShowAddCourse] = useState(false);
@@ -33,7 +33,7 @@ const TeacherDashboard = () => {
   const [courseForm, setCourseForm] = useState({
     title: '',
     description: '',
-    stream: 'general',
+    stream: 'commerce',
     class_level: '6',
     subject: '',
     price: '',
@@ -66,8 +66,6 @@ const TeacherDashboard = () => {
     platform: 'zoom',
     meeting_link: ''
   });
-
-  const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
   useEffect(() => {
     checkAuth();
@@ -102,20 +100,20 @@ const TeacherDashboard = () => {
 
   const loadAllData = async (token, userId) => {
     try {
-      const [coursesRes, sessionsRes] = await Promise.all([
-        axios.get(`${API}/courses/teacher/${userId}`, { headers: { Authorization: `Bearer ${token}` } }),
+      const [statsRes, sessionsRes] = await Promise.all([
+        axios.get(`${API}/teacher/stats`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/bookings/my`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
       
-      setCourses(coursesRes.data);
+      setTeacherStats(statsRes.data);
       setSessions(sessionsRes.data);
       
       // Get all upcoming live classes across all courses
       const allClasses = [];
-      for (const course of coursesRes.data) {
+      for (const course of statsRes.data.courses) {
         try {
           const classesRes = await axios.get(`${API}/live-classes/course/${course.course_id}`);
-          allClasses.push(...classesRes.data.map(c => ({ ...c, course_title: course.title })));
+          allClasses.push(...classesRes.data.map(c => ({ ...c, course_title: course.title, course_id: course.course_id })));
         } catch (e) {
           // Course might not have classes
         }
@@ -217,7 +215,7 @@ const TeacherDashboard = () => {
     setCourseForm({
       title: '',
       description: '',
-      stream: 'general',
+      stream: 'commerce',
       class_level: '6',
       subject: '',
       price: '',
@@ -230,6 +228,11 @@ const TeacherDashboard = () => {
   // Live Class Functions
   const handleCreateLiveClass = async (e) => {
     e.preventDefault();
+    if (!liveClassForm.course_id) {
+      toast.error('Please select a course');
+      return;
+    }
+    
     try {
       const token = localStorage.getItem('token');
       
@@ -347,6 +350,7 @@ const TeacherDashboard = () => {
   }
 
   const upcomingSessions = sessions.filter(s => s.status === 'scheduled' && new Date(s.date) >= new Date());
+  const { courses, total_students, total_courses } = teacherStats;
 
   return (
     <div className="min-h-screen bg-slate-950">
@@ -381,23 +385,27 @@ const TeacherDashboard = () => {
           {user?.bio && (
             <p className="text-xs text-slate-500 mt-2">{user.bio}</p>
           )}
-          {user?.subjects && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {user.subjects.map((subj, idx) => (
-                <Badge key={idx} variant="secondary" className="text-xs">{subj}</Badge>
-              ))}
-            </div>
-          )}
         </div>
         
         <nav className="p-4 space-y-2">
+          <button 
+            onClick={() => setActiveTab('students')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${activeTab === 'students' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+            data-testid="nav-students"
+          >
+            <Users className="w-5 h-5" />
+            <span>Enrolled Students</span>
+            {total_students > 0 && (
+              <Badge className="ml-auto bg-green-600 text-white">{total_students}</Badge>
+            )}
+          </button>
           <button 
             onClick={() => setActiveTab('courses')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${activeTab === 'courses' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
             data-testid="nav-courses"
           >
             <BookOpen className="w-5 h-5" />
-            <span>My Courses</span>
+            <span>Manage Courses</span>
           </button>
           <button 
             onClick={() => setActiveTab('classes')}
@@ -414,9 +422,6 @@ const TeacherDashboard = () => {
           >
             <CalendarDays className="w-5 h-5" />
             <span>1:1 Sessions</span>
-            {upcomingSessions.length > 0 && (
-              <Badge className="ml-auto bg-green-600 text-white">{upcomingSessions.length}</Badge>
-            )}
           </button>
         </nav>
         
@@ -443,8 +448,17 @@ const TeacherDashboard = () => {
             <Card className="p-4 bg-slate-900 border-slate-800">
               <div className="flex items-center justify-between">
                 <div>
+                  <p className="text-sm text-slate-400">Total Students</p>
+                  <p className="text-2xl font-bold text-white">{total_students}</p>
+                </div>
+                <UserCheck className="w-8 h-8 text-green-500" />
+              </div>
+            </Card>
+            <Card className="p-4 bg-slate-900 border-slate-800">
+              <div className="flex items-center justify-between">
+                <div>
                   <p className="text-sm text-slate-400">My Courses</p>
-                  <p className="text-2xl font-bold text-white">{courses.length}</p>
+                  <p className="text-2xl font-bold text-white">{total_courses}</p>
                 </div>
                 <BookOpen className="w-8 h-8 text-blue-500" />
               </div>
@@ -464,25 +478,77 @@ const TeacherDashboard = () => {
                   <p className="text-sm text-slate-400">1:1 Sessions</p>
                   <p className="text-2xl font-bold text-white">{upcomingSessions.length}</p>
                 </div>
-                <Users className="w-8 h-8 text-green-500" />
-              </div>
-            </Card>
-            <Card className="p-4 bg-slate-900 border-slate-800">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-400">Class Range</p>
-                  <p className="text-2xl font-bold text-white">{user?.class_range || '6-10'}</p>
-                </div>
-                <GraduationCap className="w-8 h-8 text-amber-500" />
+                <CalendarDays className="w-8 h-8 text-amber-500" />
               </div>
             </Card>
           </div>
 
-          {/* My Courses Tab */}
+          {/* Enrolled Students Tab */}
+          {activeTab === 'students' && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-white">Enrolled Students</h2>
+              
+              {courses.length === 0 ? (
+                <Card className="p-12 text-center bg-slate-900 border-slate-800">
+                  <Users className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                  <h3 className="text-xl font-medium text-slate-400 mb-2">No students yet</h3>
+                  <p className="text-slate-500">Create courses and start getting enrollments</p>
+                </Card>
+              ) : (
+                <div className="space-y-6">
+                  {courses.map((course) => (
+                    <Card key={course.course_id} className="bg-slate-900 border-slate-800 overflow-hidden">
+                      <div className="p-4 bg-gradient-to-r from-blue-900/50 to-violet-900/50 border-b border-slate-800">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-lg font-bold text-white">{course.title}</h3>
+                            <p className="text-sm text-slate-400">{course.subject} • Class {course.class_level}</p>
+                          </div>
+                          <Badge className="bg-green-600 text-lg px-3 py-1">
+                            {course.enrolled_count} Student{course.enrolled_count !== 1 ? 's' : ''}
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="p-4">
+                        {course.students && course.students.length > 0 ? (
+                          <div className="space-y-3">
+                            {course.students.map((student, idx) => (
+                              <div key={idx} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-green-600 to-emerald-600 flex items-center justify-center text-white font-bold">
+                                    {student.name?.charAt(0)}
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-white">{student.name}</p>
+                                    <p className="text-sm text-slate-400 flex items-center gap-1">
+                                      <Mail className="w-3 h-3" />
+                                      {student.email}
+                                    </p>
+                                  </div>
+                                </div>
+                                <Badge variant="secondary" className="bg-slate-700">
+                                  Enrolled
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-center text-slate-500 py-4">No students enrolled yet</p>
+                        )}
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Manage Courses Tab */}
           {activeTab === 'courses' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-white">My Courses</h2>
+                <h2 className="text-2xl font-bold text-white">Manage Courses</h2>
                 <Button 
                   onClick={() => { resetCourseForm(); setShowAddCourse(true); }}
                   className="bg-blue-600 hover:bg-blue-700"
@@ -509,7 +575,6 @@ const TeacherDashboard = () => {
                           placeholder="e.g., Commerce Class 10"
                           required
                           className="bg-slate-800 border-slate-700 text-white"
-                          data-testid="course-title-input"
                         />
                       </div>
                       <div>
@@ -519,7 +584,6 @@ const TeacherDashboard = () => {
                           onChange={(e) => setCourseForm({...courseForm, subject: e.target.value})}
                           required
                           className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                          data-testid="course-subject-input"
                         >
                           <option value="">Select Subject</option>
                           <option value="Commerce">Commerce</option>
@@ -529,7 +593,6 @@ const TeacherDashboard = () => {
                           <option value="Accountancy">Accountancy</option>
                           <option value="History">History</option>
                           <option value="Geography">Geography</option>
-                          <option value="Political Science">Political Science</option>
                         </select>
                       </div>
                     </div>
@@ -541,7 +604,6 @@ const TeacherDashboard = () => {
                           value={courseForm.stream}
                           onChange={(e) => setCourseForm({...courseForm, stream: e.target.value})}
                           className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                          data-testid="course-stream-select"
                         >
                           <option value="commerce">Commerce</option>
                           <option value="humanities">Humanities</option>
@@ -553,7 +615,6 @@ const TeacherDashboard = () => {
                           value={courseForm.class_level}
                           onChange={(e) => setCourseForm({...courseForm, class_level: e.target.value})}
                           className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                          data-testid="course-class-select"
                         >
                           <option value="6">Class 6</option>
                           <option value="7">Class 7</option>
@@ -571,19 +632,8 @@ const TeacherDashboard = () => {
                           placeholder="6999"
                           required
                           className="bg-slate-800 border-slate-700 text-white"
-                          data-testid="course-price-input"
                         />
                       </div>
-                    </div>
-                    
-                    <div>
-                      <Label className="text-slate-300">Thumbnail URL (optional)</Label>
-                      <Input
-                        value={courseForm.thumbnail}
-                        onChange={(e) => setCourseForm({...courseForm, thumbnail: e.target.value})}
-                        placeholder="https://example.com/image.jpg"
-                        className="bg-slate-800 border-slate-700 text-white"
-                      />
                     </div>
                     
                     <div>
@@ -595,12 +645,11 @@ const TeacherDashboard = () => {
                         rows={3}
                         required
                         className="bg-slate-800 border-slate-700 text-white"
-                        data-testid="course-desc-input"
                       />
                     </div>
                     
                     <div className="flex gap-3">
-                      <Button type="submit" className="bg-green-600 hover:bg-green-700" data-testid="submit-course-btn">
+                      <Button type="submit" className="bg-green-600 hover:bg-green-700">
                         {editingCourse ? 'Update Course' : 'Create Course'}
                       </Button>
                       <Button type="button" variant="outline" onClick={resetCourseForm} className="border-slate-700 text-slate-300 hover:bg-slate-800">
@@ -621,10 +670,7 @@ const TeacherDashboard = () => {
               ) : (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {courses.map((course) => (
-                    <Card key={course.course_id} className="bg-slate-900 border-slate-800 overflow-hidden" data-testid={`course-card-${course.course_id}`}>
-                      {course.thumbnail && (
-                        <img src={course.thumbnail} alt={course.title} className="w-full h-32 object-cover" />
-                      )}
+                    <Card key={course.course_id} className="bg-slate-900 border-slate-800 overflow-hidden">
                       <div className="p-4">
                         <div className="flex items-start justify-between mb-2">
                           <h3 className="text-lg font-semibold text-white">{course.title}</h3>
@@ -633,12 +679,12 @@ const TeacherDashboard = () => {
                           </Badge>
                         </div>
                         <p className="text-sm text-slate-400 mb-2">{course.subject} • Class {course.class_level}</p>
-                        <p className="text-sm text-slate-500 mb-4 line-clamp-2">{course.description}</p>
-                        <p className="text-lg font-bold text-blue-400 mb-4">₹{course.price}/month</p>
+                        <p className="text-lg font-bold text-blue-400 mb-2">₹{course.price}/month</p>
+                        <p className="text-sm text-green-400 mb-4">{course.enrolled_count} students enrolled</p>
                         
                         <div className="flex gap-2 flex-wrap">
                           <Link to={`/teacher/course/${course.course_id}`} className="flex-1">
-                            <Button className="w-full bg-blue-600 hover:bg-blue-700" size="sm" data-testid={`manage-btn-${course.course_id}`}>
+                            <Button className="w-full bg-blue-600 hover:bg-blue-700" size="sm">
                               <Settings className="w-4 h-4 mr-1" />
                               Manage
                             </Button>
@@ -648,7 +694,6 @@ const TeacherDashboard = () => {
                             size="sm"
                             onClick={() => handleEditCourse(course)}
                             className="border-slate-700 text-slate-300 hover:bg-slate-800"
-                            data-testid={`edit-btn-${course.course_id}`}
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
@@ -657,7 +702,6 @@ const TeacherDashboard = () => {
                             size="sm"
                             onClick={() => handleTogglePublish(course.course_id, course.published !== false)}
                             className="border-slate-700 text-slate-300 hover:bg-slate-800"
-                            data-testid={`publish-btn-${course.course_id}`}
                           >
                             {course.published !== false ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </Button>
@@ -666,7 +710,6 @@ const TeacherDashboard = () => {
                             size="sm"
                             onClick={() => handleDeleteCourse(course.course_id)}
                             className="border-red-800 text-red-400 hover:bg-red-900/50"
-                            data-testid={`delete-btn-${course.course_id}`}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -699,6 +742,24 @@ const TeacherDashboard = () => {
                 <Card className="p-6 bg-slate-900 border-slate-800">
                   <h3 className="text-xl font-semibold text-white mb-4">Schedule Live Class</h3>
                   <form onSubmit={handleCreateLiveClass} className="space-y-4">
+                    <div className="p-4 bg-blue-900/30 border border-blue-700 rounded-lg mb-4">
+                      <Label className="text-blue-300 font-semibold">Select Course (Students of this course can attend) *</Label>
+                      <select
+                        value={liveClassForm.course_id}
+                        onChange={(e) => setLiveClassForm({...liveClassForm, course_id: e.target.value})}
+                        required
+                        className="w-full mt-2 px-4 py-3 bg-slate-800 border border-blue-600 rounded-lg text-white text-lg"
+                      >
+                        <option value="">-- Select which course students to teach --</option>
+                        {courses.map((course) => (
+                          <option key={course.course_id} value={course.course_id}>
+                            {course.title} ({course.enrolled_count} students enrolled)
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-blue-400 mt-2">Only students enrolled in the selected course will see and can join this class</p>
+                    </div>
+                    
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
                         <Label className="text-slate-300">Class Title *</Label>
@@ -711,25 +772,6 @@ const TeacherDashboard = () => {
                         />
                       </div>
                       <div>
-                        <Label className="text-slate-300">Course *</Label>
-                        <select
-                          value={liveClassForm.course_id}
-                          onChange={(e) => setLiveClassForm({...liveClassForm, course_id: e.target.value})}
-                          required
-                          className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                        >
-                          <option value="">Select Course</option>
-                          {courses.map((course) => (
-                            <option key={course.course_id} value={course.course_id}>
-                              {course.title}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    
-                    <div className="grid md:grid-cols-3 gap-4">
-                      <div>
                         <Label className="text-slate-300">Date *</Label>
                         <Input
                           type="date"
@@ -740,6 +782,9 @@ const TeacherDashboard = () => {
                           className="bg-slate-800 border-slate-700 text-white"
                         />
                       </div>
+                    </div>
+                    
+                    <div className="grid md:grid-cols-3 gap-4">
                       <div>
                         <Label className="text-slate-300">Start Time *</Label>
                         <Input
@@ -764,9 +809,6 @@ const TeacherDashboard = () => {
                           <option value={120}>120 minutes</option>
                         </select>
                       </div>
-                    </div>
-                    
-                    <div className="grid md:grid-cols-2 gap-4">
                       <div>
                         <Label className="text-slate-300">Platform *</Label>
                         <div className="flex gap-4 mt-2">
@@ -777,12 +819,8 @@ const TeacherDashboard = () => {
                               value="zoom"
                               checked={liveClassForm.platform === 'zoom'}
                               onChange={(e) => setLiveClassForm({...liveClassForm, platform: e.target.value})}
-                              className="text-blue-600"
                             />
-                            <span className="text-slate-300 flex items-center gap-1">
-                              <Video className="w-4 h-4 text-blue-400" />
-                              Zoom
-                            </span>
+                            <span className="text-slate-300">Zoom</span>
                           </label>
                           <label className="flex items-center gap-2 cursor-pointer">
                             <input
@@ -791,34 +829,20 @@ const TeacherDashboard = () => {
                               value="google_meet"
                               checked={liveClassForm.platform === 'google_meet'}
                               onChange={(e) => setLiveClassForm({...liveClassForm, platform: e.target.value})}
-                              className="text-blue-600"
                             />
-                            <span className="text-slate-300 flex items-center gap-1">
-                              <Video className="w-4 h-4 text-green-400" />
-                              Google Meet
-                            </span>
+                            <span className="text-slate-300">Google Meet</span>
                           </label>
                         </div>
-                      </div>
-                      <div>
-                        <Label className="text-slate-300">Meeting Link *</Label>
-                        <Input
-                          value={liveClassForm.meeting_link}
-                          onChange={(e) => setLiveClassForm({...liveClassForm, meeting_link: e.target.value})}
-                          placeholder={liveClassForm.platform === 'zoom' ? 'https://zoom.us/j/...' : 'https://meet.google.com/...'}
-                          required
-                          className="bg-slate-800 border-slate-700 text-white"
-                        />
                       </div>
                     </div>
                     
                     <div>
-                      <Label className="text-slate-300">Description (optional)</Label>
-                      <Textarea
-                        value={liveClassForm.description}
-                        onChange={(e) => setLiveClassForm({...liveClassForm, description: e.target.value})}
-                        placeholder="Topics to be covered in this class..."
-                        rows={2}
+                      <Label className="text-slate-300">Meeting Link *</Label>
+                      <Input
+                        value={liveClassForm.meeting_link}
+                        onChange={(e) => setLiveClassForm({...liveClassForm, meeting_link: e.target.value})}
+                        placeholder={liveClassForm.platform === 'zoom' ? 'https://zoom.us/j/...' : 'https://meet.google.com/...'}
+                        required
                         className="bg-slate-800 border-slate-700 text-white"
                       />
                     </div>
@@ -850,9 +874,9 @@ const TeacherDashboard = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <h3 className="text-lg font-semibold text-white">{cls.title}</h3>
-                          <p className="text-sm text-slate-400">{cls.course_title}</p>
+                          <p className="text-sm text-blue-400">{cls.course_title}</p>
                           <div className="flex items-center gap-4 mt-2 text-sm">
-                            <span className="text-blue-400">{new Date(cls.scheduled_at).toLocaleString()}</span>
+                            <span className="text-slate-400">{new Date(cls.scheduled_at).toLocaleString()}</span>
                             <Badge variant="secondary" className={cls.platform === 'zoom' ? 'bg-blue-600' : 'bg-green-600'}>
                               {cls.platform === 'zoom' ? 'Zoom' : 'Google Meet'}
                             </Badge>
@@ -863,7 +887,7 @@ const TeacherDashboard = () => {
                           <a href={cls.meeting_link} target="_blank" rel="noopener noreferrer">
                             <Button className="bg-green-600 hover:bg-green-700">
                               <ExternalLink className="w-4 h-4 mr-2" />
-                              Start Class
+                              Start
                             </Button>
                           </a>
                           <Button 
@@ -890,7 +914,6 @@ const TeacherDashboard = () => {
                 <Button 
                   onClick={() => setShowAddSession(true)}
                   className="bg-green-600 hover:bg-green-700"
-                  data-testid="add-session-btn"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Schedule Session
@@ -969,12 +992,8 @@ const TeacherDashboard = () => {
                               value="zoom"
                               checked={sessionForm.platform === 'zoom'}
                               onChange={(e) => setSessionForm({...sessionForm, platform: e.target.value})}
-                              className="text-blue-600"
                             />
-                            <span className="text-slate-300 flex items-center gap-1">
-                              <Video className="w-4 h-4 text-blue-400" />
-                              Zoom
-                            </span>
+                            <span className="text-slate-300">Zoom</span>
                           </label>
                           <label className="flex items-center gap-2 cursor-pointer">
                             <input
@@ -983,12 +1002,8 @@ const TeacherDashboard = () => {
                               value="google_meet"
                               checked={sessionForm.platform === 'google_meet'}
                               onChange={(e) => setSessionForm({...sessionForm, platform: e.target.value})}
-                              className="text-blue-600"
                             />
-                            <span className="text-slate-300 flex items-center gap-1">
-                              <Video className="w-4 h-4 text-green-400" />
-                              Google Meet
-                            </span>
+                            <span className="text-slate-300">Google Meet</span>
                           </label>
                         </div>
                       </div>
@@ -1011,17 +1026,6 @@ const TeacherDashboard = () => {
                         onChange={(e) => setSessionForm({...sessionForm, subject: e.target.value})}
                         placeholder="e.g., Commerce Doubt Clearing"
                         required
-                        className="bg-slate-800 border-slate-700 text-white"
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label className="text-slate-300">Notes (optional)</Label>
-                      <Textarea
-                        value={sessionForm.notes}
-                        onChange={(e) => setSessionForm({...sessionForm, notes: e.target.value})}
-                        placeholder="Any specific topics or notes..."
-                        rows={2}
                         className="bg-slate-800 border-slate-700 text-white"
                       />
                     </div>
@@ -1052,24 +1056,15 @@ const TeacherDashboard = () => {
                     <Card key={session.slot_id} className="p-4 bg-slate-900 border-slate-800">
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-lg font-semibold text-white">{session.subject || '1:1 Session'}</h3>
-                            <Badge className={
-                              session.status === 'scheduled' ? 'bg-green-600' :
-                              session.status === 'cancelled' ? 'bg-red-600' :
-                              'bg-slate-600'
-                            }>
-                              {session.status}
-                            </Badge>
-                          </div>
+                          <h3 className="text-lg font-semibold text-white">{session.subject || '1:1 Session'}</h3>
                           {session.student_name && (
                             <p className="text-sm text-slate-400">Student: {session.student_name}</p>
                           )}
                           <div className="flex items-center gap-4 mt-2 text-sm">
                             <span className="text-blue-400">{session.date}</span>
                             <span className="text-slate-400">{session.start_time} - {session.end_time}</span>
-                            <Badge variant="secondary" className={session.platform === 'zoom' ? 'bg-blue-600' : 'bg-green-600'}>
-                              {session.platform === 'zoom' ? 'Zoom' : 'Google Meet'}
+                            <Badge className={session.status === 'scheduled' ? 'bg-green-600' : 'bg-slate-600'}>
+                              {session.status}
                             </Badge>
                           </div>
                         </div>
