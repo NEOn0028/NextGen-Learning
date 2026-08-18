@@ -19,8 +19,8 @@ const Courses = () => {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [filters, setFilters] = useState({
-    class_level: '',
-    stream: '',
+    class_level: 'all',
+    stream: 'all',
     search: ''
   });
   
@@ -48,25 +48,48 @@ const Courses = () => {
     }
   };
   
-  const filterCourses = () => {
-    let filtered = [...courses];
-    
-    if (filters.class_level) {
-      filtered = filtered.filter(c => c.class_level === filters.class_level);
-    }
-    if (filters.stream) {
-      filtered = filtered.filter(c => c.stream === filters.stream);
-    }
-    if (filters.search) {
-      const search = filters.search.toLowerCase();
-      filtered = filtered.filter(c => 
-        c.title.toLowerCase().includes(search) ||
-        c.subject.toLowerCase().includes(search)
-      );
-    }
-    
-    setFilteredCourses(filtered);
-  };
+const filterCourses = () => {
+  let filtered = [...courses];
+
+  // Class filter
+  if (filters.class_level && filters.class_level !== 'all') {
+    const selectedClass = String(filters.class_level)
+      .replace(/^class\s*/i, '')
+      .trim();
+
+    filtered = filtered.filter((course) => {
+      const courseClass = String(course.class_level || '')
+        .replace(/^class\s*/i, '')
+        .trim();
+
+      return courseClass === selectedClass;
+    });
+  }
+
+  // Stream filter
+  if (filters.stream && filters.stream !== 'all') {
+    const selectedStream = String(filters.stream).toLowerCase().trim();
+
+    filtered = filtered.filter((course) => {
+      const courseStream = String(course.stream || '').toLowerCase().trim();
+
+      return courseStream === selectedStream;
+    });
+  }
+
+  // Search filter
+  if (filters.search.trim()) {
+    const search = filters.search.toLowerCase().trim();
+
+    filtered = filtered.filter((course) =>
+      String(course.title || '').toLowerCase().includes(search) ||
+      String(course.subject || '').toLowerCase().includes(search) ||
+      String(course.description || '').toLowerCase().includes(search)
+    );
+  }
+
+  setFilteredCourses(filtered);
+};
   
   const getStreamColor = (stream) => {
     if (stream === 'commerce') return 'gradient-commerce';
@@ -182,7 +205,7 @@ const Courses = () => {
             
             <Button 
               variant="outline"
-              onClick={() => setFilters({ class_level: '', stream: '', search: '' })}
+              onClick={() => setFilters({ class_level: 'all', stream: 'all', search: '' })}
               data-testid="clear-filters-btn"
             >
               Clear Filters
