@@ -254,11 +254,22 @@ const Landing = () => {
                   ))}
                 </div>
                 
-                <Link to="/signup">
-                  <Button className={`w-full h-10 ${plan.popular ? 'bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700' : 'bg-slate-700 hover:bg-slate-600'} text-white`}>
-                    Enroll Now
-                  </Button>
-                </Link>
+<Button
+  onClick={() => {
+    if (isAuthenticated()) {
+      navigate('/courses');
+    } else {
+      navigate('/signup');
+    }
+  }}
+  className={`w-full h-10 ${
+    plan.popular
+      ? 'bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700'
+      : 'bg-slate-700 hover:bg-slate-600'
+  } text-white`}
+>
+  Enroll Now
+</Button>
               </Card>
             ))}
           </div>
