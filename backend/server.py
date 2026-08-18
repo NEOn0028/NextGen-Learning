@@ -444,8 +444,8 @@ async def register(user_data: UserCreate):
     token = create_jwt_token(user_id)
     
     # Return user without password_hash
-    user_doc.pop('password_hash')
-    user_doc.pop('_id')
+    user_doc.pop('password_hash', None)
+    user_doc.pop('_id', None)
     
     return {"user": user_doc, "token": token}
 
@@ -464,8 +464,8 @@ async def login(credentials: UserLogin):
     token = create_jwt_token(user_doc['user_id'])
     
     # Return user without password_hash
-    user_doc.pop('password_hash')
-    user_doc.pop('_id')
+    user_doc.pop('password_hash', None)
+    user_doc.pop('_id', None)
     
     return {"user": user_doc, "token": token}
 
@@ -544,9 +544,9 @@ async def exchange_session(request: Request, response: Response):
     
     # Remove sensitive fields
     if 'password_hash' in user_doc:
-        user_doc.pop('password_hash')
+        user_doc.pop('password_hash', None)
     if '_id' in user_doc:
-        user_doc.pop('_id')
+        user_doc.pop('_id', None)
     
     return {"user": user_doc, "session_token": session_token}
 
