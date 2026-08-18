@@ -1101,20 +1101,7 @@ async def create_doubt(
 ):
     doubt_id = f"doubt_{uuid.uuid4().hex[:12]}"
     
-    # AI response if requested
     ai_response = None
-    if doubt_data.use_ai and EMERGENT_LLM_KEY:
-        try:
-            chat = LlmChat(
-                api_key=EMERGENT_LLM_KEY,
-                session_id=f"doubt_{doubt_id}",
-                system_message=f"You are an expert tutor for Indian students (Classes 9-12). Subject: {doubt_data.subject}. Provide clear, accurate, and helpful explanations."
-            ).with_model("openai", "gpt-5.2")
-            
-            user_message = UserMessage(text=doubt_data.message)
-            ai_response = await chat.send_message(user_message)
-        except Exception as e:
-            logger.error(f"AI response failed: {e}")
     
     doubt_doc = {
         "doubt_id": doubt_id,
