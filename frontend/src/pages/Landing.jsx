@@ -509,13 +509,11 @@ const Landing = () => {
                 <li>
                   <p>Yatindra Mankesh Mishra</p>
                 </li>
-                <li>www.nextgenlearning.com</li>
               </ul>
             </div>
           </div>
           <div className="border-t border-slate-800 pt-8 text-center">
             <p className="text-slate-500 text-sm">© 2026 NextGen Learning. All rights reserved.</p>
-            <p className="text-slate-600 text-xs mt-2">www.nextgenlearning.com</p>
           </div>
         </div>
       </footer>
