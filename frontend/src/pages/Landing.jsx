@@ -416,8 +416,8 @@ const Landing = () => {
             </div>
             <div className="flex flex-col items-center gap-3">
               <RefreshCw className="w-12 h-12 text-blue-400" />
-              <h3 className="font-semibold text-white">7-Day Refund</h3>
-              <p className="text-slate-400 text-sm">Not satisfied? Get full refund</p>
+              <h3 className="font-semibold text-white">No Refund</h3>
+              <p className="text-slate-400 text-sm">All sales are final</p>
             </div>
             <div className="flex flex-col items-center gap-3">
               <MessageCircle className="w-12 h-12 text-violet-400" />
