@@ -247,6 +247,7 @@ class Doubt(BaseModel):
     message: str
     is_ai_response: bool = False
     ai_response: Optional[str] = None
+    ai_model: Optional[str] = None  # Which AI model was used
     created_at: datetime
 
 class DoubtCreate(BaseModel):
@@ -254,6 +255,7 @@ class DoubtCreate(BaseModel):
     subject: str
     message: str
     use_ai: bool = True
+    ai_model: str = "gpt-5.2"  # Options: gpt-5.2, claude-sonnet-5, claude-haiku-4.5
 
 class DoubtResponse(BaseModel):
     response_id: str
@@ -1095,6 +1097,22 @@ async def get_student_test_attempts(current_user: User = Depends(get_current_use
 
 # ============ DOUBT ENDPOINTS ============
 
+# AI Model configurations
+AI_MODELS = {
+    "gpt-5.2": {"provider": "openai", "model": "gpt-5.2", "name": "GPT-5.2"},
+    "claude-sonnet-5": {"provider": "anthropic", "model": "claude-sonnet-5", "name": "Claude Sonnet 5"},
+    "claude-haiku-4.5": {"provider": "anthropic", "model": "claude-haiku-4-5-20251001", "name": "Claude Haiku 4.5"}
+}
+
+@api_router.get("/ai-models")
+async def get_available_ai_models():
+    """Get list of available AI models for doubt assistant"""
+    return [
+        {"id": "gpt-5.2", "name": "GPT-5.2 (OpenAI)", "description": "Fast and accurate responses"},
+        {"id": "claude-sonnet-5", "name": "Claude Sonnet 5 (Anthropic)", "description": "Balanced performance and reasoning"},
+        {"id": "claude-haiku-4.5", "name": "Claude Haiku 4.5 (Anthropic)", "description": "Quick and cost-effective"}
+    ]
+
 @api_router.post("/doubts", response_model=Doubt)
 async def create_doubt(
     doubt_data: DoubtCreate,
@@ -1104,18 +1122,23 @@ async def create_doubt(
     
     # AI response if requested
     ai_response = None
+    ai_model_used = None
     if doubt_data.use_ai and EMERGENT_LLM_KEY:
         try:
+            # Get model configuration
+            model_config = AI_MODELS.get(doubt_data.ai_model, AI_MODELS["gpt-5.2"])
+            
             chat = LlmChat(
                 api_key=EMERGENT_LLM_KEY,
                 session_id=f"doubt_{doubt_id}",
-                system_message=f"You are an expert tutor for Indian students (Classes 9-12). Subject: {doubt_data.subject}. Provide clear, accurate, and helpful explanations."
-            ).with_model("openai", "gpt-5.2")
+                system_message=f"You are an expert tutor for Indian students (Classes 6-12). Subject: {doubt_data.subject}. Provide clear, accurate, and helpful explanations. Keep responses concise but thorough."
+            ).with_model(model_config["provider"], model_config["model"])
             
             user_message = UserMessage(text=doubt_data.message)
             ai_response = await chat.send_message(user_message)
+            ai_model_used = model_config["name"]
         except Exception as e:
-            logger.error(f"AI response failed: {e}")
+            logger.error(f"AI response failed with {doubt_data.ai_model}: {e}")
     
     doubt_doc = {
         "doubt_id": doubt_id,
@@ -1126,6 +1149,7 @@ async def create_doubt(
         "message": doubt_data.message,
         "is_ai_response": bool(ai_response),
         "ai_response": ai_response,
+        "ai_model": ai_model_used,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.doubts.insert_one(doubt_doc)
@@ -1809,7 +1833,7 @@ async def get_enrolled_courses(current_user: User = Depends(get_current_user)):
     return enrolled_courses
 
 @api_router.get("/student/upcoming-classes")
-async def get_upcoming_classes(current_user: User = Depends(get_current_user)):
+async def get_student_upcoming_classes(current_user: User = Depends(get_current_user)):
     """Get all upcoming live classes for enrolled courses"""
     enrollments = await db.enrollments.find(
         {"student_id": current_user.user_id, "payment_status": "completed"},
