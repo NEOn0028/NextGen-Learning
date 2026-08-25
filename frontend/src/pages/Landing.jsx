@@ -148,7 +148,7 @@ const Landing = () => {
               <div className="mt-8 flex items-center gap-6">
                 <div className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-blue-400" />
-                  <span className="text-slate-300">500+ Happy Students</span>
+                  <span className="text-slate-300">50+ Happy Students</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
@@ -427,8 +427,8 @@ const Landing = () => {
             </div>
             <div className="flex flex-col items-center gap-3">
               <RefreshCw className="w-12 h-12 text-blue-400" />
-              <h3 className="font-semibold text-white">7-Day Refund</h3>
-              <p className="text-slate-400 text-sm">Not satisfied? Get full refund</p>
+              <h3 className="font-semibold text-white">No Refund</h3>
+              <p className="text-slate-400 text-sm">All sales are final</p>
             </div>
             <div className="flex flex-col items-center gap-3">
               <MessageCircle className="w-12 h-12 text-violet-400" />
@@ -520,13 +520,11 @@ const Landing = () => {
                 <li>
                   <p>Yatindra Mankesh Mishra</p>
                 </li>
-                <li>www.nextgenlearning.com</li>
               </ul>
             </div>
           </div>
           <div className="border-t border-slate-800 pt-8 text-center">
             <p className="text-slate-500 text-sm">© 2026 NextGen Learning. All rights reserved.</p>
-            <p className="text-slate-600 text-xs mt-2">www.nextgenlearning.com</p>
           </div>
         </div>
       </footer>

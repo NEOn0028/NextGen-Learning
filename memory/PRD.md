@@ -57,7 +57,9 @@ NextGen Learning is a modern online education platform for students in Classes 6
 - **Status**: ✅ IMPLEMENTED (MOCKED - Manual verification)
 
 ### 6. AI Doubt Assistant
-- GPT-5.2 powered doubt resolution
+- **Multiple AI Models**: GPT-5.2, Claude Sonnet 5, Claude Haiku 4.5
+- Students can choose their preferred AI model
+- Responses show which model was used
 - **Status**: ✅ IMPLEMENTED
 
 ## Technical Architecture
@@ -83,9 +85,17 @@ NextGen Learning is a modern online education platform for students in Classes 6
 ## Test Accounts
 - **Admin**: admin@nextgen.com / admin123
 - **Teacher**: ruchi.kejriwal@nextgenlearning.com / ruchi123
-- **Student**: student@test.com / student123
+- **Student**: teststudent@nextgen.com / test123
+
+## 3rd Party Integrations
+- **OpenAI GPT-5.2** - AI Doubt Assistant (via Emergent LLM Key)
+- **Anthropic Claude Sonnet 5** - AI Doubt Assistant (via Emergent LLM Key)  
+- **Anthropic Claude Haiku 4.5** - AI Doubt Assistant (via Emergent LLM Key)
+- **Emergent-managed Google Auth** - Social login
 
 ## Completed Work (Dec 2025)
+- ✅ Claude AI Models Integration (Sonnet 5 & Haiku 4.5) alongside GPT-5.2
+- ✅ AI Model selector in Doubts page (students choose their preferred AI)
 - ✅ Admin Dashboard with full CRUD on users, courses, classes, payments
 - ✅ Course pricing updated: 6-8 (₹3,999), 9-10 (₹5,999), Humanities (₹7,999), Commerce (₹8,999)
 - ✅ 39 courses created in database
@@ -93,7 +103,6 @@ NextGen Learning is a modern online education platform for students in Classes 6
 - ✅ Teacher Control System (courses, live classes, 1:1 sessions)
 - ✅ Student restricted views (enrolled courses only)
 - ✅ Profile settings for all users
-- ✅ AI Doubt Assistant with GPT-5.2
 
 ## Pending/Future Tasks
 
