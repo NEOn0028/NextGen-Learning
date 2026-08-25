@@ -148,7 +148,7 @@ const Landing = () => {
               <div className="mt-8 flex items-center gap-6">
                 <div className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-blue-400" />
-                  <span className="text-slate-300">500+ Happy Students</span>
+                  <span className="text-slate-300">50+ Happy Students</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
