@@ -37,11 +37,33 @@ const AdminDashboard = () => {
     title: '',
     description: '',
     stream: 'general',
-    class_level: '6',
+    class_level: '6-8',
     subject: '',
     price: '',
     teacher_id: ''
   });
+  
+  // Helper functions for course form
+  const isJuniorClass = (classLevel) => classLevel === '6-8' || classLevel === '9-10';
+  
+  const getSubjectOptions = (classLevel) => {
+    if (classLevel === '6-8' || classLevel === '9-10') {
+      return [
+        'All Subjects (Mathematics, Science, English, Social Science, Hindi, Computer Science)'
+      ];
+    }
+    return [];
+  };
+  
+  const getStreamSubjectOptions = (stream) => {
+    if (stream === 'commerce') {
+      return ['All Commerce Subjects (Economics, Business Studies, Accountancy, Mathematics, English)'];
+    }
+    if (stream === 'humanities') {
+      return ['All Humanities Subjects (History, Geography, Political Science, Sociology, Psychology, English)'];
+    }
+    return [];
+  };
   
   // Live Class form states
   const [showAddLiveClass, setShowAddLiveClass] = useState(false);
@@ -222,7 +244,7 @@ const AdminDashboard = () => {
         toast.success('Course created!');
       }
       setShowAddCourse(false);
-      setCourseForm({ title: '', description: '', stream: 'general', class_level: '6', subject: '', price: '', teacher_id: '' });
+      setCourseForm({ title: '', description: '', stream: 'general', class_level: '6-8', subject: '', price: '', teacher_id: '' });
       await loadAllData(token);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to save course');
@@ -734,7 +756,7 @@ const AdminDashboard = () => {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-white">Course Management</h2>
-                <Button onClick={() => { setCourseForm({ title: '', description: '', stream: 'general', class_level: '6', subject: '', price: '', teacher_id: '' }); setEditingCourse(null); setShowAddCourse(true); }} className="bg-blue-600 hover:bg-blue-700">
+                <Button onClick={() => { setCourseForm({ title: '', description: '', stream: 'general', class_level: '6-8', subject: '', price: '', teacher_id: '' }); setEditingCourse(null); setShowAddCourse(true); }} className="bg-blue-600 hover:bg-blue-700">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Course
                 </Button>
@@ -767,25 +789,57 @@ const AdminDashboard = () => {
                     </div>
                     <div className="grid md:grid-cols-4 gap-4">
                       <div>
-                        <Label className="text-slate-300">Stream</Label>
-                        <select
-                          value={courseForm.stream}
-                          onChange={(e) => setCourseForm({...courseForm, stream: e.target.value})}
-                          className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                        >
-                          <option value="general">General</option>
-                          <option value="commerce">Commerce</option>
-                          <option value="humanities">Humanities</option>
-                        </select>
-                      </div>
-                      <div>
                         <Label className="text-slate-300">Class Level</Label>
                         <select
                           value={courseForm.class_level}
-                          onChange={(e) => setCourseForm({...courseForm, class_level: e.target.value})}
+                          onChange={(e) => {
+                            const newClassLevel = e.target.value;
+                            const newStream = isJuniorClass(newClassLevel) ? 'general' : 'commerce';
+                            setCourseForm({
+                              ...courseForm,
+                              class_level: newClassLevel,
+                              stream: newStream,
+                              subject: ''
+                            });
+                          }}
                           className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
                         >
-                          {[6, 7, 8, 9, 10, 11, 12].map(c => <option key={c} value={c}>Class {c}</option>)}
+                          <option value="6-8">Class 6-8</option>
+                          <option value="9-10">Class 9-10</option>
+                          <option value="11">Class 11</option>
+                          <option value="12">Class 12</option>
+                        </select>
+                      </div>
+                      {!isJuniorClass(courseForm.class_level) && (
+                        <div>
+                          <Label className="text-slate-300">Stream</Label>
+                          <select
+                            value={courseForm.stream}
+                            onChange={(e) => setCourseForm({...courseForm, stream: e.target.value, subject: ''})}
+                            className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                          >
+                            <option value="commerce">Commerce</option>
+                            <option value="humanities">Humanities</option>
+                          </select>
+                        </div>
+                      )}
+                      <div>
+                        <Label className="text-slate-300">Subject</Label>
+                        <select
+                          value={courseForm.subject}
+                          onChange={(e) => setCourseForm({...courseForm, subject: e.target.value})}
+                          required
+                          className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                        >
+                          <option value="">Select Subject</option>
+                          {isJuniorClass(courseForm.class_level)
+                            ? getSubjectOptions(courseForm.class_level).map(subj => (
+                                <option key={subj} value={subj}>{subj}</option>
+                              ))
+                            : getStreamSubjectOptions(courseForm.stream).map(subj => (
+                                <option key={subj} value={subj}>{subj}</option>
+                              ))
+                          }
                         </select>
                       </div>
                       <div>

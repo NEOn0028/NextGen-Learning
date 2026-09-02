@@ -44,12 +44,35 @@ const TeacherDashboard = () => {
   const [courseForm, setCourseForm] = useState({
     title: '',
     description: '',
-    stream: 'commerce',
-    class_level: '9',
+    stream: 'general',
+    class_level: '6-8',
     subject: '',
     price: '',
     thumbnail: ''
   });
+  
+  // Subject options based on class level
+  const getSubjectOptions = (classLevel) => {
+    if (classLevel === '6-8' || classLevel === '9-10') {
+      return [
+        'All Subjects (Mathematics, Science, English, Social Science, Hindi, Computer Science)'
+      ];
+    }
+    // For class 11 and 12, subjects depend on stream
+    return [];
+  };
+  
+  const getStreamSubjectOptions = (stream) => {
+    if (stream === 'commerce') {
+      return ['All Commerce Subjects (Economics, Business Studies, Accountancy, Mathematics, English)'];
+    }
+    if (stream === 'humanities') {
+      return ['All Humanities Subjects (History, Geography, Political Science, Sociology, Psychology, English)'];
+    }
+    return [];
+  };
+  
+  const isJuniorClass = (classLevel) => classLevel === '6-8' || classLevel === '9-10';
   
   // Live Class form states
   const [showAddLiveClass, setShowAddLiveClass] = useState(false);
@@ -236,8 +259,8 @@ const TeacherDashboard = () => {
     setCourseForm({
       title: '',
       description: '',
-      stream: 'commerce',
-      class_level: '6',
+      stream: 'general',
+      class_level: '6-8',
       subject: '',
       price: '',
       thumbnail: ''
@@ -643,11 +666,51 @@ const TeacherDashboard = () => {
                         <Input
                           value={courseForm.title}
                           onChange={(e) => setCourseForm({...courseForm, title: e.target.value})}
-                          placeholder="e.g., Commerce Class 10"
+                          placeholder="e.g., Mathematics Class 9-10"
                           required
                           className="bg-slate-800 border-slate-700 text-white"
                         />
                       </div>
+                      <div>
+                        <Label className="text-slate-300">Class Level *</Label>
+                        <select
+                          value={courseForm.class_level}
+                          onChange={(e) => {
+                            const newClassLevel = e.target.value;
+                            const newStream = isJuniorClass(newClassLevel) ? 'general' : 'commerce';
+                            setCourseForm({
+                              ...courseForm, 
+                              class_level: newClassLevel,
+                              stream: newStream,
+                              subject: '' // Reset subject when class level changes
+                            });
+                          }}
+                          className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                        >
+                          <option value="6-8">Class 6-8</option>
+                          <option value="9-10">Class 9-10</option>
+                          <option value="11">Class 11</option>
+                          <option value="12">Class 12</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div className="grid md:grid-cols-3 gap-4">
+                      {/* Stream dropdown - only show for Class 11 and 12 */}
+                      {!isJuniorClass(courseForm.class_level) && (
+                        <div>
+                          <Label className="text-slate-300">Stream *</Label>
+                          <select
+                            value={courseForm.stream}
+                            onChange={(e) => setCourseForm({...courseForm, stream: e.target.value, subject: ''})}
+                            className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                          >
+                            <option value="commerce">Commerce</option>
+                            <option value="humanities">Humanities</option>
+                          </select>
+                        </div>
+                      )}
+                      
                       <div>
                         <Label className="text-slate-300">Subject *</Label>
                         <select
@@ -657,50 +720,24 @@ const TeacherDashboard = () => {
                           className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
                         >
                           <option value="">Select Subject</option>
-                          <option value="Commerce">Commerce</option>
-                          <option value="Humanities">Humanities</option>
-                          <option value="Economics">Economics</option>
-                          <option value="Business Studies">Business Studies</option>
-                          <option value="Accountancy">Accountancy</option>
-                          <option value="History">History</option>
-                          <option value="Geography">Geography</option>
+                          {isJuniorClass(courseForm.class_level) 
+                            ? getSubjectOptions(courseForm.class_level).map(subj => (
+                                <option key={subj} value={subj}>{subj}</option>
+                              ))
+                            : getStreamSubjectOptions(courseForm.stream).map(subj => (
+                                <option key={subj} value={subj}>{subj}</option>
+                              ))
+                          }
                         </select>
                       </div>
-                    </div>
-                    
-                    <div className="grid md:grid-cols-3 gap-4">
-                      <div>
-                        <Label className="text-slate-300">Stream *</Label>
-                        <select
-                          value={courseForm.stream}
-                          onChange={(e) => setCourseForm({...courseForm, stream: e.target.value})}
-                          className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                        >
-                          <option value="commerce">Commerce</option>
-                          <option value="humanities">Humanities</option>
-                        </select>
-                      </div>
-                      <div>
-                        <Label className="text-slate-300">Class Level *</Label>
-                        <select
-                          value={courseForm.class_level}
-                          onChange={(e) => setCourseForm({...courseForm, class_level: e.target.value})}
-                          className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
-                        >
-                          <option value="6">Class 6</option>
-                          <option value="7">Class 7</option>
-                          <option value="8">Class 8</option>
-                          <option value="9">Class 9</option>
-                          <option value="10">Class 10</option>
-                        </select>
-                      </div>
+                      
                       <div>
                         <Label className="text-slate-300">Price (₹/month) *</Label>
                         <Input
                           type="number"
                           value={courseForm.price}
                           onChange={(e) => setCourseForm({...courseForm, price: e.target.value})}
-                          placeholder="6999"
+                          placeholder="3999"
                           required
                           className="bg-slate-800 border-slate-700 text-white"
                         />
