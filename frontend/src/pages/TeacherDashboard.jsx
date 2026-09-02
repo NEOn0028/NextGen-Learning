@@ -54,7 +54,9 @@ const TeacherDashboard = () => {
   // Subject options based on class level
   const getSubjectOptions = (classLevel) => {
     if (classLevel === '6-8' || classLevel === '9-10') {
-      return ['Mathematics', 'Science', 'English', 'Social Science', 'Hindi', 'Computer Science'];
+      return [
+        'All Subjects (Mathematics, Science, English, Social Science, Hindi, Computer Science)'
+      ];
     }
     // For class 11 and 12, subjects depend on stream
     return [];
@@ -62,10 +64,10 @@ const TeacherDashboard = () => {
   
   const getStreamSubjectOptions = (stream) => {
     if (stream === 'commerce') {
-      return ['Economics', 'Business Studies', 'Accountancy', 'Mathematics', 'English'];
+      return ['All Commerce Subjects (Economics, Business Studies, Accountancy, Mathematics, English)'];
     }
     if (stream === 'humanities') {
-      return ['History', 'Geography', 'Political Science', 'Sociology', 'Psychology', 'English'];
+      return ['All Humanities Subjects (History, Geography, Political Science, Sociology, Psychology, English)'];
     }
     return [];
   };
