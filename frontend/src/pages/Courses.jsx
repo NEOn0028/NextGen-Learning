@@ -51,10 +51,17 @@ const Courses = () => {
   const filterCourses = () => {
     let filtered = [...courses];
     
-    if (filters.class_level) {
-      filtered = filtered.filter(c => c.class_level === filters.class_level);
+    if (filters.class_level && filters.class_level !== 'all') {
+      // Handle range-based class levels
+      if (filters.class_level === '6-8') {
+        filtered = filtered.filter(c => ['6', '7', '8', '6-8'].includes(c.class_level));
+      } else if (filters.class_level === '9-10') {
+        filtered = filtered.filter(c => ['9', '10', '9-10'].includes(c.class_level));
+      } else {
+        filtered = filtered.filter(c => c.class_level === filters.class_level);
+      }
     }
-    if (filters.stream) {
+    if (filters.stream && filters.stream !== 'all') {
       filtered = filtered.filter(c => c.stream === filters.stream);
     }
     if (filters.search) {
@@ -161,8 +168,8 @@ const Courses = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Classes</SelectItem>
-                <SelectItem value="9">Class 9</SelectItem>
-                <SelectItem value="10">Class 10</SelectItem>
+                <SelectItem value="6-8">Class 6-8</SelectItem>
+                <SelectItem value="9-10">Class 9-10</SelectItem>
                 <SelectItem value="11">Class 11</SelectItem>
                 <SelectItem value="12">Class 12</SelectItem>
               </SelectContent>
