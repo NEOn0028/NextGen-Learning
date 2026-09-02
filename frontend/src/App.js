@@ -4,6 +4,7 @@ import '@/App.css';
 
 // Pages
 import Landing from '@/pages/Landing';
+import { Navigate } from 'react-router-dom';
 import Login from '@/pages/Login';
 import Signup from '@/pages/Signup';
 import AuthCallback from '@/pages/AuthCallback';
@@ -17,6 +18,24 @@ import Checkout from '@/pages/Checkout';
 import VideoPlayer from '@/pages/VideoPlayer';
 import Doubts from '@/pages/Doubts';
 import ManageCourse from '@/pages/ManageCourse';
+function HomeRoute() {
+  const token = localStorage.getItem('token');
+  const userStr = localStorage.getItem('user');
+  
+  if (token && userStr) {
+    try {
+      const user = JSON.parse(userStr);
+      if (user.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+      if (user.role === 'teacher') return <Navigate to="/teacher/dashboard" replace />;
+      if (user.role === 'parent') return <Navigate to="/parent/dashboard" replace />;
+      return <Navigate to="/student/dashboard" replace />;
+    } catch (e) {
+      return <Landing />;
+    }
+  }
+  
+  return <Landing />;
+}
 
 function AppRouter() {
   const location = useLocation();
@@ -29,7 +48,7 @@ function AppRouter() {
   
   return (
     <Routes>
-      <Route path="/" element={<Landing />} />
+      <Route path="/" element={<HomeRoute />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/courses" element={<Courses />} />
