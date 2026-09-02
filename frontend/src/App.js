@@ -4,7 +4,6 @@ import '@/App.css';
 
 // Pages
 import Landing from '@/pages/Landing';
-import { Navigate } from 'react-router-dom';
 import Login from '@/pages/Login';
 import Signup from '@/pages/Signup';
 import AuthCallback from '@/pages/AuthCallback';
