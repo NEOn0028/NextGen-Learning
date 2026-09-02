@@ -19,8 +19,8 @@ const Courses = () => {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [filters, setFilters] = useState({
-    class_level: '',
-    stream: '',
+    class_level: 'all',
+    stream: 'all',
     search: ''
   });
   
@@ -189,7 +189,7 @@ const Courses = () => {
             
             <Button 
               variant="outline"
-              onClick={() => setFilters({ class_level: '', stream: '', search: '' })}
+              onClick={() => setFilters({ class_level: 'all', stream: 'all', search: '' })}
               data-testid="clear-filters-btn"
             >
               Clear Filters
